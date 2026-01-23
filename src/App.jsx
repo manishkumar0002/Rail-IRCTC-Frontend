@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 
 import Login from "./pages/Login";
 import LoginSuccess from "./pages/LoginSuccess";
+import OAuthSuccess from "./pages/OAuthSuccess";
 import Dashboard from "./pages/Dashboard";
 import Trains from "./pages/Trains";
 import MyBookings from "./pages/MyBookings";
@@ -48,6 +49,7 @@ export default function App() {
       />
 
       <Route path="/login-success" element={<LoginSuccess />} />
+      <Route path="/oauth-success" element={<OAuthSuccess />} />
 
       <Route
         path="/dashboard"

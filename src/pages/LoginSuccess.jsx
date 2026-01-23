@@ -15,11 +15,18 @@ const LoginSuccess = () => {
       return;
     }
 
-    (async () => {
-      await loginWithToken(token);
-      navigate("/dashboard", { replace: true });
-    })();
-  }, []);
+    const handleLogin = async () => {
+      try {
+        await loginWithToken(token);
+        navigate("/dashboard", { replace: true });
+      } catch (error) {
+        console.error("OAuth login failed", error);
+        navigate("/login", { replace: true });
+      }
+    };
+
+    handleLogin();
+  }, [loginWithToken, navigate]);
 
   return <h2>Signing you in...</h2>;
 };

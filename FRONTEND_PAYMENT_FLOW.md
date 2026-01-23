@@ -1,6 +1,6 @@
 # Frontend Payment Flow - Complete Implementation
 
-## ✅ What's Been Implemented
+## What's Been Implemented
 
 ### 1. **Updated Booking Flow** (`/src/pages/Trains.jsx`)
 - Modified `handleBooking()` function to create a PENDING booking
@@ -48,39 +48,50 @@ Created comprehensive payment interface with:
 
 ---
 
-## 📋 Frontend Flow Diagram
+## Frontend Flow Diagram
 
 ```
 User Books Ticket (Trains.jsx)
-         ↓
+         |
+         V
 Fill passenger details + Select class
-         ↓
+         |
+         V
 Click "Confirm Booking"
-         ↓
+         |
+         V
 API: POST /api/bookings (creates PENDING booking)
-         ↓
+         |
+         V
 Navigate to /payment page
-         ↓
+         |
+         V
 Payment Page (Payments.jsx)
-├── Shows booking summary
-├── Select payment method
-└── Click "Pay ₹XXX"
-         ↓
+|- Shows booking summary
+|- Select payment method
+|- Click "Pay INR XXX"
+         |
+         V
 API: POST /api/payments/create-order
-         ↓
+         |
+         V
 [Payment Gateway Integration]
 (Simulated in frontend for now)
-         ↓
+         |
+         V
 API: POST /api/payments/verify
-         ↓
-Success? ────YES───→ Show success screen
-    │                     ↓
-    │            Auto-redirect to /my-bookings
-    │
-    NO
-    ↓
+         |
+         V
+Success? ----YES----> Show success screen
+    |                     |
+    |            Auto-redirect to /my-bookings
+    |
+   
+    |
+    V
 Show failure screen
-    ↓
+    |
+    V
 Retry payment option
 ```
 
@@ -179,7 +190,7 @@ public class Payment {
     @ManyToOne
     private Booking booking;
     
-    private Double amount;
+   ivate Double amount;
     private String paymentMethod;
     private String paymentStatus; // SUCCESS, FAILED, PENDING
     
@@ -222,7 +233,7 @@ const options = {
   order_id: orderId,
   name: 'IRCTC Rail Booking',
   handler: function(response) {
-    // Verify payment
+    Verify payment
     verifyPayment(response);
   }
 };
@@ -248,14 +259,14 @@ razorpay.open();
 - Click "Pay ₹XXX"
 - Wait 2 seconds (simulated payment)
 
-### 3. **Success:**
+###X3. **Success:**
 - See success screen
 - Auto-redirect to My Bookings
 - Booking should show as CONFIRMED
 
 ---
 
-## 📝 Backend Endpoints Checklist
+## Backend Endpoints Checklist
 
 Create these endpoints:
 
@@ -267,7 +278,7 @@ Create these endpoints:
 
 ---
 
-## 🎯 Key Points
+## Key Points
 
 1. **Frontend handles**: UI/UX, payment method selection, status display
 2. **Backend handles**: Payment verification, booking confirmation, security
@@ -277,7 +288,7 @@ Create these endpoints:
 
 ---
 
-## 🚀 Quick Start for Backend
+## Quick Start for Backend
 
 1. Update `Booking` entity with `status` and `totalAmount` fields
 2. Create `Payment` entity/table
@@ -288,6 +299,6 @@ Create these endpoints:
 
 ---
 
-## 📧 Need Help?
+## Need Help?
 
 If you need clarification on any endpoint or the flow, let me know!

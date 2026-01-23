@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 import Login from "./pages/Login";
 import LoginSuccess from "./pages/LoginSuccess";
@@ -30,6 +31,7 @@ const MainLayout = ({ children }) => (
   <div className="main-layout">
     <Navbar />
     <main>{children}</main>
+    <Footer />
   </div>
 );
 

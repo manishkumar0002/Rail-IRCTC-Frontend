@@ -395,12 +395,12 @@ export default function Trains() {
               <div className="checking-seats">Checking availability...</div>
             ) : seatAvailability ? (
               <div className="seat-info success">
-                ✅ {seatAvailability.availableSeats} seats available in{" "}
+                {seatAvailability.availableSeats} seats available in{" "}
                 {bookingForm.classType}
               </div>
             ) : (
               <div className="seat-info error">
-                ❌ Seat availability not found for this class
+                 Seat availability not found for this class
               </div>
             )}
 

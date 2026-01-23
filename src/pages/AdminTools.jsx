@@ -99,7 +99,7 @@ const AdminTools = () => {
     }
     try {
       await adminAPI.addTrain(trainForm);
-      success("✅ Train added successfully!");
+      success(" Train added successfully!");
       setTrainForm({ trainNumber: "", trainName: "", totalSeats: 0 });
       fetchAllData();
     } catch (err) {
@@ -116,7 +116,7 @@ const AdminTools = () => {
     }
     try {
       await adminAPI.addStation(stationForm);
-      success("✅ Station added successfully!");
+      success(" Station added successfully!");
       setStationForm({ code: "", name: "" });
       fetchAllData();
     } catch (err) {
@@ -152,7 +152,7 @@ const AdminTools = () => {
         routeForm.stopOrder,
         routeForm.halt
       );
-      success("✅ Route stop added successfully!");
+      success(" Route stop added successfully!");
       setRouteForm({
         trainId: routeForm.trainId,
         stationCode: "",
@@ -170,7 +170,7 @@ const AdminTools = () => {
     if (!window.confirm("Are you sure you want to delete this stop?")) return;
     try {
       await adminAPI.deleteStop(stopId);
-      success("✅ Stop deleted successfully!");
+      success(" Stop deleted successfully!");
       if (selectedTrainRoute) {
         handleViewRoute(selectedTrainRoute.trainId);
       }
@@ -193,7 +193,7 @@ const AdminTools = () => {
         seatForm.classType,
         seatForm.seats
       );
-      success("✅ Seats initialized successfully!");
+      success("Seats initialized successfully!");
       setSeatForm({
         trainId: "",
         travelDate: "",
@@ -761,7 +761,7 @@ const AdminTools = () => {
                       <td>{stop.stopOrder}</td>
                       <td>{stop.station.code}</td>
                       <td>{stop.station.name}</td>
-                      <td>{stop.halt ? "✅ Yes" : "❌ No"}</td>
+                      <td>{stop.halt ? " Yes" : " No"}</td>
                       <td>
                         <button
                           className="btn btn-danger btn-small"

@@ -40,7 +40,8 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       const response = await trainAPI.getStations();
-      setStations(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setStations(data);
     } catch (error) {
       console.error("Failed to fetch stations:", error);
       // If public endpoint fails, the stations will remain empty

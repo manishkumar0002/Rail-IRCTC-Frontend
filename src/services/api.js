@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// Point to backend server (do NOT point to Vite dev port, which returns HTML)
 const API_BASE_URL = "http://localhost:8080";
 
 const api = axios.create({
@@ -124,7 +125,7 @@ export const passengerAPI = {
 export const paymentAPI = {
   // Create payment order (initiates payment)
   createPaymentOrder: (bookingId) =>
-    api.post(`/api/payments/create-order`, { bookingId }),
+    api.post(`/api/payments/create-order/${bookingId}`),
   
   // Verify payment after gateway callback
   verifyPayment: (paymentData) =>
@@ -223,5 +224,5 @@ export const clearAuthStorage = () => {
     });
   }
   
-  console.log("✅ Auth storage cleared");
+  console.log("Auth storage cleared");
 };

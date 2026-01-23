@@ -1,13 +1,24 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config/api";
 
-// Point to backend server (do NOT point to Vite dev port, which returns HTML)
-const API_BASE_URL = "http://localhost:8080";
+// ==============================
+// Base URL check (IMPORTANT)
+// ==============================
+if (!API_BASE_URL) {
+  console.error(" VITE_API_BASE_URL is NOT defined");
+} else {
+  console.log("🔗 API_BASE_URL =", API_BASE_URL);
+}
 
+// ==============================
+// Axios instance
+// ==============================
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL, // ✅ NO localhost
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // safe for future cookie auth
 });
 
 // ==============================
@@ -15,11 +26,14 @@ const api = axios.create({
 // ==============================
 api.interceptors.request.use(
   (config) => {
-    console.log("📤 API Request:", config.method.toUpperCase(), config.url);
+    const method = config.method?.toUpperCase() || "REQUEST";
+    console.log("📤 API Request:", method, config.url);
+
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => {
@@ -33,7 +47,7 @@ api.interceptors.request.use(
 // ==============================
 api.interceptors.response.use(
   (response) => {
-    console.log("📥 API Response:", response.status, response.data);
+    console.log("📥 API Response:", response.status, response.config.url);
     return response;
   },
   (error) => {
@@ -42,11 +56,15 @@ api.interceptors.response.use(
       data: error.response?.data,
       message: error.message,
     });
-    
+
+    // Auto logout on 401 (token expired / invalid)
     if (error.response?.status === 401) {
       clearAuthStorage();
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
+
     return Promise.reject(error);
   }
 );
@@ -63,15 +81,7 @@ export const authAPI = {
   register: (name, email, password) =>
     api.post("/api/auth/register", { name, email, password }),
 
-  // CHOOSE ONE OF THESE THREE OPTIONS:
-  // Option 1: If your backend has /api/auth/me
   getProfile: () => api.get("/api/auth/me"),
-  
-  // Option 2: If your backend has /api/auth/profile
-  // getProfile: () => api.get("/api/auth/profile"),
-  
-  // Option 3: If your backend has /api/user or /api/users/me
-  // getProfile: () => api.get("/api/user"),
 };
 
 // ==============================
@@ -89,8 +99,7 @@ export const trainAPI = {
     api.get("/api/seat-availability", {
       params: { trainId, travelDate, classType },
     }),
-  
-  // Public endpoint for stations (fallback if admin endpoint fails)
+
   getStations: () => api.get("/api/stations"),
 };
 
@@ -123,21 +132,17 @@ export const passengerAPI = {
 // Payment APIs
 // ==============================
 export const paymentAPI = {
-  // Create payment order (initiates payment)
   createPaymentOrder: (bookingId) =>
     api.post(`/api/payments/create-order/${bookingId}`),
-  
-  // Verify payment after gateway callback
+
   verifyPayment: (paymentData) =>
     api.post(`/api/payments/verify`, paymentData),
-  
-  // Old method (kept for backward compatibility)
+
   makePayment: (bookingId, success, paymentMethod) =>
     api.post(`/api/payments/${bookingId}`, null, {
       params: { success, paymentMethod },
     }),
-  
-  // Get payment status
+
   getPaymentStatus: (bookingId) =>
     api.get(`/api/payments/status/${bookingId}`),
 };
@@ -146,19 +151,14 @@ export const paymentAPI = {
 // Admin APIs
 // ==============================
 export const adminAPI = {
-  // Trains
   getTrains: () => api.get("/api/admin/trains"),
-
   addTrain: (trainData) =>
     api.post("/api/admin/trains", trainData),
 
-  // Stations
   getStations: () => api.get("/api/admin/stations"),
-
   addStation: (stationData) =>
     api.post("/api/admin/stations", stationData),
 
-  // Routes
   getRoute: (trainId) =>
     api.get(`/api/admin/routes/${trainId}`),
 
@@ -170,13 +170,11 @@ export const adminAPI = {
   deleteStop: (stopId) =>
     api.delete(`/api/admin/routes/stops/${stopId}`),
 
-  // Seats
   initializeSeats: (trainId, travelDate, classType, seats) =>
     api.post("/api/admin/seats/init", null, {
       params: { trainId, travelDate, classType, seats },
     }),
 
-  // Bookings & Payments
   getAllBookings: () =>
     api.get("/api/admin/bookings"),
 
@@ -191,38 +189,26 @@ export const healthAPI = {
   check: () => api.get("/api/health"),
 };
 
+// ==============================
+// Clear Auth Storage
+// ==============================
 export const clearAuthStorage = () => {
   if (typeof window === "undefined") return;
-  
-  console.log("🧹 Clearing all auth storage...");
-  
-  // Clear specific auth items
+
+  console.log("🧹 Clearing auth storage");
+
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  
-  // Clear all sessionStorage
   sessionStorage.clear();
-  
-  // Clear all cookies
+
   document.cookie.split(";").forEach((cookie) => {
     const name = cookie.split("=")[0].trim();
-    // Clear for current path
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    // Clear for domain
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
-    // Clear for root domain
-    const rootDomain = window.location.hostname.split('.').slice(-2).join('.');
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain};`;
   });
-  
-  // Clear browser cache (request browser to reload without cache)
-  if ('caches' in window) {
+
+  if ("caches" in window) {
     caches.keys().then((names) => {
-      names.forEach((name) => {
-        caches.delete(name);
-      });
+      names.forEach((name) => caches.delete(name));
     });
   }
-  
-  console.log("Auth storage cleared");
 };

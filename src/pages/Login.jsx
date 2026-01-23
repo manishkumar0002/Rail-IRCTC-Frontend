@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Train, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import Loader from '../components/Loader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { API_BASE_URL } from '../config/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -65,8 +66,7 @@ const Login = () => {
   };
 
 const handleGoogleLogin = () => {
-  window.location.href =
-    "http://localhost:8080/oauth2/authorization/google";
+  window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
 };
 
   return (

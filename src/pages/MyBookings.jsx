@@ -64,6 +64,7 @@ const { toasts, success, error, removeToast } = useToast();
 
   const handleProceedToPayment = (booking) => {
     if (!booking) return;
+    console.log("🔵 Navigating to payment with booking:", booking);
     navigate("/payment", {
       state: {
         booking,

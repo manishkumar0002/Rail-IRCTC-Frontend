@@ -16,6 +16,7 @@ import {
   Wallet,
   Building2,
   Smartphone,
+  AlertCircle,
 } from "lucide-react";
 import Loader from "../components/Loader";
 
@@ -234,6 +235,36 @@ export default function Payments() {
     return <Loader fullScreen text="Loading..." />;
   }
 
+  // ❌ ERROR: No Booking Data
+  if (!booking && !isAdmin) {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="error-container">
+            <div className="error-icon">
+              <AlertCircle size={64} color="#ef4444" />
+            </div>
+            <h1>❌ Booking Not Found</h1>
+            <p>Unable to load booking details. Please go back and try again.</p>
+            <div className="error-details">
+              <p><strong>Debug Info:</strong></p>
+              <p>Booking State: {booking ? "✅ Loaded" : "❌ Missing"}</p>
+              <p>Location State: {location.state ? "✅ Present" : "❌ Missing"}</p>
+              <p>User: {user?.email || "❌ Not logged in"}</p>
+            </div>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/my-bookings")}
+            >
+              Back to My Bookings
+            </button>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
+
   // Payment Success Screen
   if (paymentStatus === "success") {
     return (
@@ -438,6 +469,55 @@ export default function Payments() {
       .container {
         max-width: 1200px;
         margin: 0 auto;
+      }
+
+      /* Error Container */
+      .error-container {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .error-icon {
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      .error-container h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ef4444;
+        margin-bottom: 1rem;
+      }
+
+      .error-container > p {
+        font-size: 1.1rem;
+        color: #666;
+        margin-bottom: 2rem;
+      }
+
+      .error-details {
+        background: rgba(239, 68, 68, 0.1);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        text-align: left;
+      }
+
+      .error-details p {
+        margin: 0.5rem 0;
+        color: #000;
+        font-size: 0.9rem;
+        font-family: monospace;
+      }
+
+      .error-details strong {
+        color: #ef4444;
       }
 
       /* Payment Container */

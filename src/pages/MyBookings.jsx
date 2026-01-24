@@ -123,16 +123,15 @@ const { toasts, success, error, removeToast } = useToast();
 
                 {(() => {
                   const status = (booking.status || "").toLowerCase();
-                  const paymentPendingStatuses = [
-                    "pending",
-                    "payment_pending",
-                    "awaiting_payment",
-                  ];
-                  if (paymentPendingStatuses.includes(status)) {
+                  // Show Proceed to Pay button for confirmed bookings that may not be fully paid
+                  const showPaymentButton = status === "confirmed" || status === "pending" || status === "payment_pending" || status === "awaiting_payment";
+                  
+                  if (showPaymentButton) {
                     return (
                       <button
                         className="btn btn-primary w-full"
                         onClick={() => handleProceedToPayment(booking)}
+                        style={{ marginTop: "0.75rem" }}
                       >
                         <CreditCard size={18} /> Proceed to Pay
                       </button>

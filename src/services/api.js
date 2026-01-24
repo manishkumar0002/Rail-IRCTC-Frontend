@@ -1,14 +1,7 @@
 import axios from "axios";
 import { API_BASE_URL } from "../config/api";
 
-// ==============================
-// Base URL check (IMPORTANT)
-// ==============================
-if (!API_BASE_URL) {
-  console.error(" VITE_API_BASE_URL is NOT defined");
-} else {
-  console.log("🔗 API_BASE_URL =", API_BASE_URL);
-}
+
 
 // ==============================
 // Axios instance

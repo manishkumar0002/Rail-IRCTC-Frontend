@@ -44,420 +44,7 @@ export default function Payments() {
     { id: "wallet", name: "Wallet", icon: Wallet },
   ];
 
-  useEffect(() => {
-    console.log("🔵 Payments component loaded");
-    console.log("📍 Location state:", location.state);
-    console.log("📍 Booking from state:", booking);
-    console.log("📍 Train details from state:", trainDetails);
-    console.log("👤 User info:", user);
-    console.log("🔑 Is Admin:", isAdmin);
-    
-    if (isAdmin && !booking) {
-      fetchPayments();
-    } else {
-      setIsLoading(false);
-    }
-  }, [isAdmin, booking]);
-
-  const fetchPayments = async () => {
-    try {
-      const response = await adminAPI.getAllPayments();
-      setPayments(response.data);
-    } catch (error) {
-      console.error("Failed to fetch payments:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!booking) {
-      alert("No booking found. Please try again.");
-      navigate("/trains");
-      return;
-    }
-
-    console.log("🔵 Payment initiated for booking:", booking);
-    console.log("🔵 Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID);
-
-    try {
-      setIsProcessing(true);
-
-      // Step 1: Create payment order
-      console.log("📢 Creating payment order for booking ID:", booking.id);
-      const orderResponse = await paymentAPI.createPaymentOrder(booking.id);
-      const paymentOrder = orderResponse.data;
-      
-      console.log("✅ Payment order created:", paymentOrder);
-
-      if (!paymentOrder.orderId) {
-        throw new Error("Order ID not received from backend");
-      }
-
-      // Check if Razorpay key is set
-      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-        console.error("❌ VITE_RAZORPAY_KEY_ID is not set in environment variables");
-        alert("Payment configuration error. Please contact support.");
-        setIsProcessing(false);
-        return;
-      }
-
-      // Step 2: Load Razorpay script
-      console.log("📦 Loading Razorpay script...");
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      
-      script.onload = () => {
-        console.log("✅ Razorpay script loaded successfully");
-        
-        // Step 3: Open Razorpay payment modal
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: paymentOrder.amount, // amount in paise
-          currency: "INR",
-          order_id: paymentOrder.orderId,
-          name: "Rail IRCTC",
-          description: `Booking for ${trainDetails?.trainNumber} - ${booking.seatCount} seat(s)`,
-          
-          handler: async (response) => {
-            try {
-              console.log("✅ Payment successful from Razorpay:", response);
-              
-              // Step 4: Verify payment
-              const verifyData = {
-                bookingId: booking.id,
-                orderId: paymentOrder.orderId,
-                paymentId: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              };
-
-              console.log("📢 Verifying payment on backend...", verifyData);
-              const verifyResponse = await paymentAPI.verifyPayment(verifyData);
-              
-              console.log("✅ Payment verified:", verifyResponse);
-              
-              if (verifyResponse.data.status === "SUCCESS" || verifyResponse.status === 200) {
-                setPaymentStatus("success");
-                console.log("✅ Payment status set to SUCCESS");
-                setTimeout(() => {
-                  navigate("/my-bookings", { 
-                    state: { 
-                      paymentSuccess: true,
-                      pnr: booking.pnr 
-                    } 
-                  });
-                }, 3000);
-              } else {
-                throw new Error("Payment verification failed");
-              }
-            } catch (error) {
-              console.error("❌ Payment verification error:", error);
-              setPaymentStatus("failed");
-              setIsProcessing(false);
-            }
-          },
-
-          prefill: {
-            name: user?.name || "",
-            email: user?.email || "",
-          },
-
-          theme: {
-            color: "#667eea",
-          },
-
-          modal: {
-            ondismiss: () => {
-              console.log("⚠️ Payment modal closed by user");
-              setIsProcessing(false);
-            },
-          },
-        };
-
-        console.log("🎯 Razorpay options:", options);
-        const razorpay = new window.Razorpay(options);
-        console.log("🎯 Opening Razorpay modal...");
-        razorpay.open();
-      };
-
-      script.onerror = () => {
-        console.error("❌ Failed to load Razorpay script");
-        alert("Failed to load payment gateway. Please try again.");
-        setIsProcessing(false);
-      };
-
-      document.body.appendChild(script);
-
-    } catch (error) {
-      console.error("❌ Payment initiation failed:", error);
-      alert(`Payment error: ${error.message}`);
-      setPaymentStatus("failed");
-      setIsProcessing(false);
-    }
-  };
-
-  const calculateTotal = () => {
-    if (!booking) return 0;
-    return booking.totalAmount || booking.seatCount * 500; // Fallback calculation
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "success":
-      case "completed":
-        return <CheckCircle size={18} />;
-      case "failed":
-        return <XCircle size={18} />;
-      default:
-        return <Clock size={18} />;
-    }
-  };
-
-  const getStatusClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case "success":
-      case "completed":
-        return "status-success";
-      case "failed":
-        return "status-failed";
-      default:
-        return "status-pending";
-    }
-  };
-
-  const filteredPayments = payments.filter((payment) => {
-    if (filter === "all") return true;
-    return payment.paymentStatus?.toLowerCase() === filter;
-  });
-
-  if (isLoading) {
-    return <Loader fullScreen text="Loading..." />;
-  }
-
-  // ❌ ERROR: No Booking Data
-  if (!booking && !isAdmin) {
-    return (
-      <div className="payments-page">
-        <div className="container">
-          <div className="error-container">
-            <div className="error-icon">
-              <AlertCircle size={64} color="#ef4444" />
-            </div>
-            <h1>❌ Booking Not Found</h1>
-            <p>Unable to load booking details. Please go back and try again.</p>
-            <div className="error-details">
-              <p><strong>Debug Info:</strong></p>
-              <p>Booking State: {booking ? "✅ Loaded" : "❌ Missing"}</p>
-              <p>Location State: {location.state ? "✅ Present" : "❌ Missing"}</p>
-              <p>User: {user?.email || "❌ Not logged in"}</p>
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={() => navigate("/my-bookings")}
-            >
-              Back to My Bookings
-            </button>
-          </div>
-        </div>
-        {renderStyles()}
-      </div>
-    );
-  }
-
-  // Payment Success Screen
-  if (paymentStatus === "success") {
-    return (
-      <div className="payments-page">
-        <div className="container">
-          <div className="payment-result success-result">
-            <div className="result-icon">
-              <CheckCircle size={80} />
-            </div>
-            <h1>Payment Successful!</h1>
-            <p className="result-message">
-              Your booking has been confirmed. PNR: <strong>{booking?.pnr}</strong>
-            </p>
-            <div className="result-details">
-              <p>A confirmation email has been sent to {user?.email}</p>
-              <p>Redirecting to My Bookings...</p>
-            </div>
-          </div>
-        </div>
-        {renderStyles()}
-      </div>
-    );
-  }
-
-  // Payment Failed Screen
-  if (paymentStatus === "failed") {
-    return (
-      <div className="payments-page">
-        <div className="container">
-          <div className="payment-result failed-result">
-            <div className="result-icon">
-              <XCircle size={80} />
-            </div>
-            <h1>Payment Failed</h1>
-            <p className="result-message">
-              Your payment could not be processed. Please try again.
-            </p>
-            <div className="result-actions">
-              <button 
-                className="btn btn-primary"
-                onClick={() => setPaymentStatus(null)}
-              >
-                Try Again
-              </button>
-              <button 
-                className="btn btn-secondary"
-                onClick={() => navigate("/my-bookings")}
-              >
-                Go to My Bookings
-              </button>
-            </div>
-          </div>
-        </div>
-        {renderStyles()}
-      </div>
-    );
-  }
-
-  // User Payment Screen
-  if (booking && !isAdmin) {
-    return (
-      <div className="payments-page">
-        <div className="container">
-          <div className="payment-container">
-            <h1 className="page-title">
-              <CreditCard size={32} />
-              Complete Your Payment
-            </h1>
-
-            <div className="payment-grid">
-              {/* Booking Summary */}
-              <div className="booking-summary-card">
-                <h2 className="card-title">Booking Summary</h2>
-                
-                <div className="summary-section">
-                  <div className="summary-header">
-                    <Train size={20} />
-                    <span>Train Details</span>
-                  </div>
-                  <div className="summary-details">
-                    <p><strong>{trainDetails?.trainNumber} - {trainDetails?.trainName}</strong></p>
-                    <div className="journey-info">
-                      <span>{location.state?.source}</span>
-                      <ArrowRight size={16} />
-                      <span>{location.state?.destination}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="summary-section">
-                  <div className="summary-header">
-                    <Calendar size={20} />
-                    <span>Journey Date</span>
-                  </div>
-                  <p className="summary-value">{location.state?.date}</p>
-                </div>
-
-                <div className="summary-section">
-                  <div className="summary-header">
-                    <Hash size={20} />
-                    <span>PNR Number</span>
-                  </div>
-                  <p className="summary-value pnr">{booking.pnr}</p>
-                </div>
-
-                <div className="summary-section">
-                  <div className="summary-header">
-                    <Users size={20} />
-                    <span>Passengers</span>
-                  </div>
-                  <p className="summary-value">{booking.seatCount} Passenger(s)</p>
-                  <p className="summary-value">Class: {booking.classType}</p>
-                </div>
-
-                <div className="summary-total">
-                  <span>Total Amount</span>
-                  <span className="amount">₹{calculateTotal()}</span>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="payment-methods-card">
-                <h2 className="card-title">Select Payment Method</h2>
-                
-                <div className="payment-methods">
-                  {paymentMethods.map((method) => (
-                    <button
-                      key={method.id}
-                      className={`payment-method ${
-                        selectedPaymentMethod === method.id ? "selected" : ""
-                      }`}
-                      onClick={() => setSelectedPaymentMethod(method.id)}
-                      disabled={isProcessing}
-                    >
-                      <method.icon size={24} />
-                      <span>{method.name}</span>
-                      {selectedPaymentMethod === method.id && (
-                        <CheckCircle size={20} className="check-icon" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="payment-info">
-                  <p>🔒 Your payment is secure and encrypted</p>
-                  <p>💳 We accept all major cards and payment methods</p>
-                </div>
-
-                <button
-                  className="btn btn-primary btn-pay"
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Clock size={20} className="spinner" />
-                      Processing Payment...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard size={20} />
-                      Pay ₹{calculateTotal()}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {renderStyles()}
-      </div>
-    );
-  }
-
-  // Admin view (existing code)
-  if (!isAdmin) {
-    return (
-      <div className="payments-page">
-        <div className="container">
-          <div className="no-access">
-            <CreditCard size={64} />
-            <h2>Payment History</h2>
-            <p>
-              Your payment history will appear here after you make a booking
-              payment.
-            </p>
-          </div>
-        </div>
-        {renderStyles()}
-      </div>
-    );
-  }
-
+  // ✅ DEFINE renderStyles EARLY (before any JSX return)
   const renderStyles = () => (
     <style>{`
       .payments-page {
@@ -825,16 +412,6 @@ export default function Payments() {
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       }
 
-      .page-title {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #000000;
-        margin: 0;
-      }
-
       .page-subtitle {
         color: #666;
         margin-top: 0.25rem;
@@ -1058,6 +635,421 @@ export default function Payments() {
       }
     `}</style>
   );
+
+  useEffect(() => {
+    console.log("🔵 Payments component loaded");
+    console.log("📍 Location state:", location.state);
+    console.log("📍 Booking from state:", booking);
+    console.log("📍 Train details from state:", trainDetails);
+    console.log("👤 User info:", user);
+    console.log("🔑 Is Admin:", isAdmin);
+    
+    // Only fetch payments if this is admin view and no booking data
+    if (isAdmin === true && !booking) {
+      fetchPayments();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAdmin]);
+
+  const fetchPayments = async () => {
+    try {
+      const response = await adminAPI.getAllPayments();
+      setPayments(response.data);
+    } catch (error) {
+      console.error("Failed to fetch payments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!booking) {
+      alert("No booking found. Please try again.");
+      navigate("/trains");
+      return;
+    }
+
+    console.log("🔵 Payment initiated for booking:", booking);
+    console.log("🔵 Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID);
+
+    try {
+      setIsProcessing(true);
+
+      // Step 1: Create payment order
+      console.log("📢 Creating payment order for booking ID:", booking.id);
+      const orderResponse = await paymentAPI.createPaymentOrder(booking.id);
+      const paymentOrder = orderResponse.data;
+      
+      console.log("✅ Payment order created:", paymentOrder);
+
+      if (!paymentOrder.orderId) {
+        throw new Error("Order ID not received from backend");
+      }
+
+      // Check if Razorpay key is set
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        console.error("❌ VITE_RAZORPAY_KEY_ID is not set in environment variables");
+        alert("Payment configuration error. Please contact support.");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Step 2: Load Razorpay script
+      console.log("📦 Loading Razorpay script...");
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      
+      script.onload = () => {
+        console.log("✅ Razorpay script loaded successfully");
+        
+        // Step 3: Open Razorpay payment modal
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: paymentOrder.amount, // amount in paise
+          currency: "INR",
+          order_id: paymentOrder.orderId,
+          name: "Rail IRCTC",
+          description: `Booking for ${trainDetails?.trainNumber} - ${booking.seatCount} seat(s)`,
+          
+          handler: async (response) => {
+            try {
+              console.log("✅ Payment successful from Razorpay:", response);
+              
+              // Step 4: Verify payment
+              const verifyData = {
+                bookingId: booking.id,
+                orderId: paymentOrder.orderId,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              };
+
+              console.log("📢 Verifying payment on backend...", verifyData);
+              const verifyResponse = await paymentAPI.verifyPayment(verifyData);
+              
+              console.log("✅ Payment verified:", verifyResponse);
+              
+              if (verifyResponse.data.status === "SUCCESS" || verifyResponse.status === 200) {
+                setPaymentStatus("success");
+                console.log("✅ Payment status set to SUCCESS");
+                setTimeout(() => {
+                  navigate("/my-bookings", { 
+                    state: { 
+                      paymentSuccess: true,
+                      pnr: booking.pnr 
+                    } 
+                  });
+                }, 3000);
+              } else {
+                throw new Error("Payment verification failed");
+              }
+            } catch (error) {
+              console.error("❌ Payment verification error:", error);
+              setPaymentStatus("failed");
+              setIsProcessing(false);
+            }
+          },
+
+          prefill: {
+            name: user?.name || "",
+            email: user?.email || "",
+          },
+
+          theme: {
+            color: "#667eea",
+          },
+
+          modal: {
+            ondismiss: () => {
+              console.log("⚠️ Payment modal closed by user");
+              setIsProcessing(false);
+            },
+          },
+        };
+
+        console.log("🎯 Razorpay options:", options);
+        const razorpay = new window.Razorpay(options);
+        console.log("🎯 Opening Razorpay modal...");
+        razorpay.open();
+      };
+
+      script.onerror = () => {
+        console.error("❌ Failed to load Razorpay script");
+        alert("Failed to load payment gateway. Please try again.");
+        setIsProcessing(false);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      console.error("❌ Payment initiation failed:", error);
+      alert(`Payment error: ${error.message}`);
+      setPaymentStatus("failed");
+      setIsProcessing(false);
+    }
+  };
+
+  const calculateTotal = () => {
+    if (!booking) return 0;
+    return booking.totalAmount || booking.seatCount * 500; // Fallback calculation
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "success":
+      case "completed":
+        return <CheckCircle size={18} />;
+      case "failed":
+        return <XCircle size={18} />;
+      default:
+        return <Clock size={18} />;
+    }
+  };
+
+  const getStatusClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case "success":
+      case "completed":
+        return "status-success";
+      case "failed":
+        return "status-failed";
+      default:
+        return "status-pending";
+    }
+  };
+
+  const filteredPayments = payments.filter((payment) => {
+    if (filter === "all") return true;
+    return payment.paymentStatus?.toLowerCase() === filter;
+  });
+
+  if (isLoading) {
+    return <Loader fullScreen text="Loading..." />;
+  }
+
+  // ❌ ERROR: No Booking Data for User Payment
+  if (!isAdmin && !booking) {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="error-container">
+            <div className="error-icon">
+              <AlertCircle size={64} />
+            </div>
+            <h1>❌ Booking Not Found</h1>
+            <p>Unable to load booking details. Please go back and try again.</p>
+            <div className="error-details">
+              <p><strong>Debug Info:</strong></p>
+              <p>Booking: {booking ? "✅ Loaded" : "❌ Missing"}</p>
+              <p>Location: {location.state ? "✅ Present" : "❌ Missing"}</p>
+              <p>User: {user?.email || "❌ Not logged in"}</p>
+            </div>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/my-bookings")}
+            >
+              Back to My Bookings
+            </button>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
+
+  // Payment Success Screen
+  if (paymentStatus === "success") {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="payment-result success-result">
+            <div className="result-icon">
+              <CheckCircle size={80} />
+            </div>
+            <h1>Payment Successful!</h1>
+            <p className="result-message">
+              Your booking has been confirmed. PNR: <strong>{booking?.pnr}</strong>
+            </p>
+            <div className="result-details">
+              <p>A confirmation email has been sent to {user?.email}</p>
+              <p>Redirecting to My Bookings...</p>
+            </div>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
+
+  // Payment Failed Screen
+  if (paymentStatus === "failed") {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="payment-result failed-result">
+            <div className="result-icon">
+              <XCircle size={80} />
+            </div>
+            <h1>Payment Failed</h1>
+            <p className="result-message">
+              Your payment could not be processed. Please try again.
+            </p>
+            <div className="result-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setPaymentStatus(null)}
+              >
+                Try Again
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => navigate("/my-bookings")}
+              >
+                Go to My Bookings
+              </button>
+            </div>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
+
+  // User Payment Screen
+  if (booking && !isAdmin) {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="payment-container">
+            <h1 className="page-title">
+              <CreditCard size={32} />
+              Complete Your Payment
+            </h1>
+
+            <div className="payment-grid">
+              {/* Booking Summary */}
+              <div className="booking-summary-card">
+                <h2 className="card-title">Booking Summary</h2>
+                
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <Train size={20} />
+                    <span>Train Details</span>
+                  </div>
+                  <div className="summary-details">
+                    <p><strong>{trainDetails?.trainNumber} - {trainDetails?.trainName}</strong></p>
+                    <div className="journey-info">
+                      <span>{location.state?.source}</span>
+                      <ArrowRight size={16} />
+                      <span>{location.state?.destination}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <Calendar size={20} />
+                    <span>Journey Date</span>
+                  </div>
+                  <p className="summary-value">{location.state?.date}</p>
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <Hash size={20} />
+                    <span>PNR Number</span>
+                  </div>
+                  <p className="summary-value pnr">{booking.pnr}</p>
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <Users size={20} />
+                    <span>Passengers</span>
+                  </div>
+                  <p className="summary-value">{booking.seatCount} Passenger(s)</p>
+                  <p className="summary-value">Class: {booking.classType}</p>
+                </div>
+
+                <div className="summary-total">
+                  <span>Total Amount</span>
+                  <span className="amount">₹{calculateTotal()}</span>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="payment-methods-card">
+                <h2 className="card-title">Select Payment Method</h2>
+                
+                <div className="payment-methods">
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      className={`payment-method ${
+                        selectedPaymentMethod === method.id ? "selected" : ""
+                      }`}
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      disabled={isProcessing}
+                    >
+                      <method.icon size={24} />
+                      <span>{method.name}</span>
+                      {selectedPaymentMethod === method.id && (
+                        <CheckCircle size={20} className="check-icon" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="payment-info">
+                  <p>🔒 Your payment is secure and encrypted</p>
+                  <p>💳 We accept all major cards and payment methods</p>
+                </div>
+
+                <button
+                  className="btn btn-primary btn-pay"
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Clock size={20} className="spinner" />
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={20} />
+                      Pay ₹{calculateTotal()}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
+
+  // Admin view (existing code)
+  if (!isAdmin) {
+    return (
+      <div className="payments-page">
+        <div className="container">
+          <div className="no-access">
+            <CreditCard size={64} />
+            <h2>Payment History</h2>
+            <p>
+              Your payment history will appear here after you make a booking
+              payment.
+            </p>
+          </div>
+        </div>
+        {renderStyles()}
+      </div>
+    );
+  }
 
   // Admin Payments View
   return (

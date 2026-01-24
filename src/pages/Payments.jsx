@@ -44,6 +44,13 @@ export default function Payments() {
   ];
 
   useEffect(() => {
+    console.log("🔵 Payments component loaded");
+    console.log("📍 Location state:", location.state);
+    console.log("📍 Booking from state:", booking);
+    console.log("📍 Train details from state:", trainDetails);
+    console.log("👤 User info:", user);
+    console.log("🔑 Is Admin:", isAdmin);
+    
     if (isAdmin && !booking) {
       fetchPayments();
     } else {
@@ -69,20 +76,40 @@ export default function Payments() {
       return;
     }
 
+    console.log("🔵 Payment initiated for booking:", booking);
+    console.log("🔵 Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID);
+
     try {
       setIsProcessing(true);
 
       // Step 1: Create payment order
+      console.log("📢 Creating payment order for booking ID:", booking.id);
       const orderResponse = await paymentAPI.createPaymentOrder(booking.id);
       const paymentOrder = orderResponse.data;
+      
+      console.log("✅ Payment order created:", paymentOrder);
+
+      if (!paymentOrder.orderId) {
+        throw new Error("Order ID not received from backend");
+      }
+
+      // Check if Razorpay key is set
+      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+        console.error("❌ VITE_RAZORPAY_KEY_ID is not set in environment variables");
+        alert("Payment configuration error. Please contact support.");
+        setIsProcessing(false);
+        return;
+      }
 
       // Step 2: Load Razorpay script
+      console.log("📦 Loading Razorpay script...");
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
-      document.body.appendChild(script);
-
+      
       script.onload = () => {
+        console.log("✅ Razorpay script loaded successfully");
+        
         // Step 3: Open Razorpay payment modal
         const options = {
           key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -91,10 +118,11 @@ export default function Payments() {
           order_id: paymentOrder.orderId,
           name: "Rail IRCTC",
           description: `Booking for ${trainDetails?.trainNumber} - ${booking.seatCount} seat(s)`,
-          image: "/logo.png", // Add your logo here
           
           handler: async (response) => {
             try {
+              console.log("✅ Payment successful from Razorpay:", response);
+              
               // Step 4: Verify payment
               const verifyData = {
                 bookingId: booking.id,
@@ -103,10 +131,14 @@ export default function Payments() {
                 signature: response.razorpay_signature,
               };
 
+              console.log("📢 Verifying payment on backend...", verifyData);
               const verifyResponse = await paymentAPI.verifyPayment(verifyData);
+              
+              console.log("✅ Payment verified:", verifyResponse);
               
               if (verifyResponse.data.status === "SUCCESS" || verifyResponse.status === 200) {
                 setPaymentStatus("success");
+                console.log("✅ Payment status set to SUCCESS");
                 setTimeout(() => {
                   navigate("/my-bookings", { 
                     state: { 
@@ -119,7 +151,7 @@ export default function Payments() {
                 throw new Error("Payment verification failed");
               }
             } catch (error) {
-              console.error("Payment verification error:", error);
+              console.error("❌ Payment verification error:", error);
               setPaymentStatus("failed");
               setIsProcessing(false);
             }
@@ -136,18 +168,29 @@ export default function Payments() {
 
           modal: {
             ondismiss: () => {
-              console.log("Payment modal closed");
+              console.log("⚠️ Payment modal closed by user");
               setIsProcessing(false);
             },
           },
         };
 
+        console.log("🎯 Razorpay options:", options);
         const razorpay = new window.Razorpay(options);
+        console.log("🎯 Opening Razorpay modal...");
         razorpay.open();
       };
 
+      script.onerror = () => {
+        console.error("❌ Failed to load Razorpay script");
+        alert("Failed to load payment gateway. Please try again.");
+        setIsProcessing(false);
+      };
+
+      document.body.appendChild(script);
+
     } catch (error) {
-      console.error("Payment initiation failed:", error);
+      console.error("❌ Payment initiation failed:", error);
+      alert(`Payment error: ${error.message}`);
       setPaymentStatus("failed");
       setIsProcessing(false);
     }

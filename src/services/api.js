@@ -49,9 +49,16 @@ api.interceptors.response.use(
       message: error.message,
     });
 
-    // Auto logout on 401 (token expired / invalid)
+    // ✅ FORCE LOGOUT ON JWT EXPIRY (401 Unauthorized)
     if (error.response?.status === 401) {
-      clearAuthStorage();
+      console.warn("🔒 JWT expired or invalid - forcing logout");
+      
+      // Clear all auth data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      sessionStorage.clear();
+      
+      // Redirect to login (only if not already there)
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }

@@ -5,6 +5,7 @@ import { Train, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import Loader from '../components/Loader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { API_BASE_URL } from '../config/api';
+import trainBgImage from '../assets/train.jpeg';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -70,8 +71,15 @@ const handleGoogleLogin = () => {
 };
 
   return (
-    <div className="login-page">
+    <div className="login-page" style={{
+      backgroundImage: `url(${trainBgImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed'
+    }}>
       <div className="login-background">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70"></div>
         <div className="bg-train train-1">🚂</div>
         <div className="bg-train train-2">🚃</div>
         <div className="bg-train train-3">🚃</div>

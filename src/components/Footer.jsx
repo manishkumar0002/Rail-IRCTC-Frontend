@@ -7,14 +7,14 @@ const Footer = () => {
 
   return (
     <footer className="app-footer">
-      <div className="footer-content">
+      <div className="footer-content grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 px-4 md:px-8">
         {/* Brand Section */}
         <div className="footer-section footer-brand">
-          <div className="footer-logo">
-            <Train size={32} />
-            <span>IRCTC</span>
+          <div className="footer-logo flex items-center gap-2">
+            <Train size={28} className="md:w-[32px] md:h-[32px]" />
+            <span className="text-xl md:text-2xl">IRCTC</span>
           </div>
-          <p className="footer-tagline">
+          <p className="footer-tagline text-sm md:text-base mt-3">
             Your trusted partner for seamless railway bookings across India. Travel safe, travel smart.
           </p>
           <div className="footer-social">

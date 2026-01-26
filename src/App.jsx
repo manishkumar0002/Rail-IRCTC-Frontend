@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import LoginSuccess from "./pages/LoginSuccess";
 import OAuthSuccess from "./pages/OAuthSuccess";
@@ -12,6 +13,7 @@ import Trains from "./pages/Trains";
 import MyBookings from "./pages/MyBookings";
 import Payments from "./pages/Payments";
 import AdminTools from "./pages/AdminTools";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }) => {
@@ -39,6 +41,11 @@ const MainLayout = ({ children }) => (
 export default function App() {
   return (
     <Routes>
+      {/* Public Home Page */}
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<Index />} />
+      <Route path="/contact" element={<Contact />} />
+
       <Route
         path="/login"
         element={
@@ -117,7 +124,6 @@ export default function App() {
         }
       />
 
-      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

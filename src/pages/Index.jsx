@@ -1,12 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useRef } from "react";
+import HomeNavbar from "../components/home/HomeNavbar";
+import HeroSection from "../components/home/HeroSection";
+import TrainStatusSearch from "../components/home/TrainStatusSearch";
+import FeaturesSection from "../components/home/FeaturesSection";
+import PopularRoutes from "../components/home/PopularRoutes";
+import CTASection from "../components/home/CTASection";
+import StatsSection from "../components/home/StatsSection";
+import HomeFooter from "../components/home/HomeFooter";
 
 const Index = () => {
+  const searchSectionRef = useRef(null);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-white">
+      <HomeNavbar />
+      <HeroSection ref={searchSectionRef} />
+      <TrainStatusSearch />
+      <FeaturesSection searchSectionRef={searchSectionRef} />
+      <PopularRoutes />
+      <CTASection />
+      <StatsSection />
+      <HomeFooter />
     </div>
   );
 };

@@ -1,19 +1,98 @@
+/* ===========================
+   GLOBAL RESPONSIVE STYLES
+   =========================== */
+
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 0;
+  text-align: left;
 }
 
+/* Mobile-first container */
+.container {
+  width: 100%;
+  padding: 1rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem;
+    max-width: 1200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+/* Responsive Text Sizes */
+@media (max-width: 768px) {
+  h1, .text-5xl, .text-6xl {
+    font-size: 2rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  h2, .text-4xl {
+    font-size: 1.5rem !important;
+  }
+  
+  h3, .text-3xl {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-2xl {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1rem !important;
+  }
+}
+
+/* Responsive Spacing */
+@media (max-width: 768px) {
+  .py-20 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  .py-16 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  .px-8 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .gap-8 {
+    gap: 1rem !important;
+  }
+}
+
+/* Logo Animations */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -34,9 +113,307 @@
 }
 
 .card {
-  padding: 2em;
+  padding: 1.5rem;
 }
 
-.read-the-docs {
-  color: #000000;
+@media (min-width: 768px) {
+  .card {
+    padding: 2rem;
+  }
+}
+
+/* Responsive Buttons */
+button, .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  button, .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Responsive Tables */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* ===========================
+   3D DESIGN CONCEPTS
+   =========================== */
+
+/* 3D Perspective Container */
+.perspective-container {
+  perspective: 1500px;
+  perspective-origin: center;
+}
+
+/* 3D Card Effect */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.1),
+    0 1px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-3d:hover {
+  transform: 
+    translateY(-15px) 
+    rotateX(5deg) 
+    rotateY(-5deg) 
+    scale(1.03);
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.2),
+    0 10px 20px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* 3D Layered Depth */
+.layer-3d {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.layer-3d::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+  border-radius: inherit;
+  transform: translateZ(-30px);
+  z-index: -1;
+}
+
+/* 3D Button Effect */
+.btn-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 6px 0 #4338ca,
+    0 8px 15px rgba(79, 70, 229, 0.4);
+}
+
+.btn-3d:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 9px 0 #4338ca,
+    0 12px 25px rgba(79, 70, 229, 0.6);
+}
+
+.btn-3d:active {
+  transform: translateY(3px);
+  box-shadow: 
+    0 2px 0 #4338ca,
+    0 3px 8px rgba(79, 70, 229, 0.4);
+}
+
+/* 3D Floating Animation */
+@keyframes float-3d {
+  0%, 100% {
+    transform: translateY(0) rotateX(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotateX(5deg);
+  }
+}
+
+.float-3d {
+  animation: float-3d 3s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+/* 3D Rotating Card */
+.rotate-3d {
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+}
+
+.rotate-3d:hover {
+  transform: rotateY(180deg);
+}
+
+.rotate-3d-front,
+.rotate-3d-back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rotate-3d-back {
+  transform: rotateY(180deg);
+}
+
+/* Glassmorphism 3D */
+.glass-3d {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  transform-style: preserve-3d;
+}
+
+/* 3D Text Effect */
+.text-3d {
+  text-shadow: 
+    0 1px 0 #ccc,
+    0 2px 0 #c9c9c9,
+    0 3px 0 #bbb,
+    0 4px 0 #b9b9b9,
+    0 5px 0 #aaa,
+    0 6px 1px rgba(0,0,0,.1),
+    0 0 5px rgba(0,0,0,.1),
+    0 1px 3px rgba(0,0,0,.3),
+    0 3px 5px rgba(0,0,0,.2),
+    0 5px 10px rgba(0,0,0,.25),
+    0 10px 10px rgba(0,0,0,.2),
+    0 20px 20px rgba(0,0,0,.15);
+  transform: translateZ(50px);
+}
+
+/* 3D Hover Lift */
+.hover-lift-3d {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+}
+
+.hover-lift-3d:hover {
+  transform: 
+    translateY(-25px) 
+    translateZ(50px) 
+    rotateX(10deg);
+  box-shadow: 
+    0 40px 80px rgba(0, 0, 0, 0.3),
+    0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* 3D Parallax Layer */
+.parallax-3d {
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+  transition: transform 0.3s ease-out;
+}
+
+.parallax-3d-near {
+  transform: translateZ(100px) scale(0.9);
+}
+
+.parallax-3d-mid {
+  transform: translateZ(50px) scale(0.95);
+}
+
+.parallax-3d-far {
+  transform: translateZ(0px) scale(1);
+}
+
+/* 3D Depth Shadow */
+.depth-shadow-3d {
+  box-shadow:
+    0 1px 1px rgba(0,0,0,0.12),
+    0 2px 2px rgba(0,0,0,0.12),
+    0 4px 4px rgba(0,0,0,0.12),
+    0 8px 8px rgba(0,0,0,0.12),
+    0 16px 16px rgba(0,0,0,0.12),
+    0 32px 32px rgba(0,0,0,0.12);
+}
+
+/* 3D Isometric Effect */
+.isometric-3d {
+  transform: 
+    rotateX(55deg) 
+    rotateZ(45deg) 
+    translateZ(50px);
+  transform-style: preserve-3d;
+}
+
+/* 3D Cube Animation */
+@keyframes cube-rotate-3d {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg);
+  }
+}
+
+.cube-3d {
+  animation: cube-rotate-3d 20s linear infinite;
+  transform-style: preserve-3d;
+}
+
+/* 3D Card Tilt Effect */
+.card-tilt-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+
+.card-tilt-3d:hover {
+  transform: 
+    perspective(1000px) 
+    rotateX(var(--rotate-x, 0deg)) 
+    rotateY(var(--rotate-y, 0deg)) 
+    scale3d(1.05, 1.05, 1.05);
+}
+
+/* 3D Morphing Effect */
+.morph-3d {
+  transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform-style: preserve-3d;
+}
+
+.morph-3d:hover {
+  border-radius: 50%;
+  transform: 
+    rotateZ(360deg) 
+    scale(1.2) 
+    translateZ(30px);
+}
+
+/* Neon Glow 3D */
+.neon-3d {
+  animation: neon-pulse-3d 2s ease-in-out infinite;
+}
+
+@keyframes neon-pulse-3d {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(99, 102, 241, 0.5),
+      0 0 20px rgba(99, 102, 241, 0.3),
+      0 0 30px rgba(99, 102, 241, 0.2),
+      inset 0 0 10px rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px rgba(99, 102, 241, 0.8),
+      0 0 40px rgba(99, 102, 241, 0.6),
+      0 0 60px rgba(99, 102, 241, 0.4),
+      inset 0 0 20px rgba(99, 102, 241, 0.2);
+  }
+}
+
+/* Responsive 3D Effects */
+@media (max-width: 768px) {
+  .card-3d:hover,
+  .hover-lift-3d:hover {
+    transform: translateY(-10px) scale(1.02);
+  }
+  
+  .perspective-container {
+    perspective: 1000px;
+  }
 }

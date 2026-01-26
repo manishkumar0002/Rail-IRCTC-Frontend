@@ -19,6 +19,7 @@ import Loader from "../components/Loader";
 import ToastContainer from "../components/ToastContainer";
 import useToast from "../hooks/useToast";
 import Modal from "../components/Modal";
+import authBgImage from "../assets/authafterimg.jpg";
 
 const AdminTools = () => {
   const { isAdmin } = useAuth();
@@ -228,7 +229,16 @@ const AdminTools = () => {
   }
 
   return (
-    <div className="admin-page">
+    <div 
+      className="admin-page"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh'
+      }}
+    >
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <div className="container">

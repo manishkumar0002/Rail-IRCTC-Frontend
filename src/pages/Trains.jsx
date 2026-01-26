@@ -7,6 +7,7 @@ import TrainCard from "../components/TrainCard";
 import Modal from "../components/Modal";
 import ToastContainer from "../components/ToastContainer";
 import useToast from "../hooks/useToast";
+import authBgImage from "../assets/authafterimg.jpg";
 
 const classTypes = [
   { value: "SL", label: "Sleeper (SL)" },
@@ -243,7 +244,16 @@ export default function Trains() {
   if (isLoading) return <Loader fullScreen text="Loading trains..." />;
 
   return (
-    <div className="trains-page">
+    <div 
+      className="trains-page"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh'
+      }}
+    >
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Search Section */}

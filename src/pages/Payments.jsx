@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Loader from "../components/Loader";
+import authBgImage from "../assets/authafterimg.jpg";
 
 export default function Payments() {
   const location = useLocation();
@@ -1053,7 +1054,16 @@ export default function Payments() {
 
   // Admin Payments View
   return (
-    <div className="payments-page">
+    <div 
+      className="payments-page"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh'
+      }}
+    >
       <div className="container">
         <div className="page-header">
           <div>

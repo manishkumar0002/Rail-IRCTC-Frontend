@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Loader from "../components/Loader";
 import TrainCard from "../components/TrainCard";
+import authBgImage from "../assets/authafterimg.jpg";
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -98,7 +99,16 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-page">
+    <div 
+      className="dashboard-page"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh'
+      }}
+    >
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-overlay"></div>

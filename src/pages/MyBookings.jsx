@@ -7,6 +7,7 @@ import BookingCard from "../components/BookingCard";
 import Modal from "../components/Modal";
 import ToastContainer from "../components/ToastContainer";
 import useToast from "../hooks/useToast";
+import authBgImage from "../assets/authafterimg.jpg";
 //import useToastNotification from "../hooks/useToast";
 
 const paymentMethods = [
@@ -101,16 +102,25 @@ const { toasts, success, error, removeToast } = useToast();
   }
 
   return (
-    <div className="bookings-page">
+    <div 
+      className="bookings-page"
+      style={{
+        backgroundImage: `url(${authBgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh'
+      }}
+    >
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <div className="container">
-        <h1 className="page-title">
-          <Ticket size={28} /> My Bookings
+      <div className="container px-4 md:px-6 lg:px-8">
+        <h1 className="page-title text-2xl md:text-3xl flex items-center gap-2 mb-6">
+          <Ticket size={24} className="md:w-[28px] md:h-[28px]" /> <span>My Bookings</span>
         </h1>
 
         {bookings.length ? (
-          <div className="bookings-grid">
+          <div className="bookings-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {bookings.map((booking) => (
               <div key={booking.id}>
                 <BookingCard

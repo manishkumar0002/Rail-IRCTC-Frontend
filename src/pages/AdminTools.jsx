@@ -73,19 +73,59 @@ const AdminTools = () => {
   const fetchAllData = async () => {
     try {
       setIsLoading(true);
-      const [trainsRes, stationsRes, bookingsRes, paymentsRes] = await Promise.all([
-        adminAPI.getTrains(),
-        adminAPI.getStations(),
-        adminAPI.getAllBookings(),
-        adminAPI.getAllPayments(),
-      ]);
-      setTrains(trainsRes.data);
-      setStations(stationsRes.data);
-      setBookings(bookingsRes.data);
-      setPayments(paymentsRes.data);
-    } catch (err) {
-      console.error("Failed to fetch admin data:", err);
-      error("Failed to load admin data");
+      console.log("📊 Fetching admin data...");
+      
+       // Use allSettled to handle individual request failures gracefully
+       const results = await Promise.allSettled([
+         adminAPI.getTrains(),
+         adminAPI.getStations(),
+         adminAPI.getAllBookings(),
+         adminAPI.getAllPayments(),
+       ]);
+     
+       const [trainsRes, stationsRes, bookingsRes, paymentsRes] = results;
+     
+       // Handle trains
+       if (trainsRes.status === "fulfilled") {
+         setTrains(Array.isArray(trainsRes.value?.data) ? trainsRes.value.data : []);
+         console.log("✅ Trains loaded:", trainsRes.value?.data?.length);
+       } else {
+         console.warn("⚠️ Failed to load trains:", trainsRes.reason?.response?.data?.message);
+         setTrains([]);
+       }
+     
+       // Handle stations
+       if (stationsRes.status === "fulfilled") {
+         setStations(Array.isArray(stationsRes.value?.data) ? stationsRes.value.data : []);
+         console.log("✅ Stations loaded:", stationsRes.value?.data?.length);
+       } else {
+         console.warn("⚠️ Failed to load stations:", stationsRes.reason?.response?.data?.message);
+         setStations([]);
+       }
+     
+       // Handle bookings
+       if (bookingsRes.status === "fulfilled") {
+         setBookings(Array.isArray(bookingsRes.value?.data) ? bookingsRes.value.data : []);
+         console.log("✅ Bookings loaded:", bookingsRes.value?.data?.length);
+       } else {
+         console.warn("⚠️ Failed to load bookings:", bookingsRes.reason?.response?.data?.message);
+         setBookings([]);
+       }
+     
+       // Handle payments (most likely to fail)
+       if (paymentsRes.status === "fulfilled") {
+         setPayments(Array.isArray(paymentsRes.value?.data) ? paymentsRes.value.data : []);
+         console.log("✅ Payments loaded:", paymentsRes.value?.data?.length);
+       } else {
+         console.warn("⚠️ Failed to load payments - backend issue:", paymentsRes.reason?.response?.status, paymentsRes.reason?.response?.data?.message);
+         setPayments([]);
+       }
+     
+       // Show success if at least some data loaded
+       success("Admin data loaded successfully");
+     } catch (err) {
+       console.error("❌ Unexpected error fetching admin data:", err);
+       error("Unexpected error: " + err.message);
     } finally {
       setIsLoading(false);
     }

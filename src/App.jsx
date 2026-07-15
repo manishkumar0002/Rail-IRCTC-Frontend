@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-
 import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 
 import Index from "./pages/Index";
@@ -32,13 +30,10 @@ const PublicRoute = ({ children }) => {
 };
 
 const MainLayout = ({ children }) => (
-  <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
-    <Sidebar />
-    <div className="flex-1 flex flex-col min-w-0">
-      <Navbar />
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto">{children}</main>
-      <Footer />
-    </div>
+  <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <Navbar />
+    <main className="flex-1 p-6 md:p-8 max-w-[1600px] w-full mx-auto overflow-y-auto">{children}</main>
+    <Footer />
   </div>
 );
 

@@ -1,562 +1,426 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { trainAPI, adminAPI } from "../services/api";
+import { bookingAPI } from "../services/api";
 import {
   Train,
   Search,
-  MapPin,
-  Calendar,
-  ArrowRight,
   Ticket,
-  Users,
   CreditCard,
   Settings,
+  HelpCircle,
+  TrendingUp,
+  MapPin,
+  Clock,
+  CheckCircle,
+  FileText,
+  User,
+  ArrowRight
 } from "lucide-react";
-import Loader from "../components/Loader";
-import TrainCard from "../components/TrainCard";
-import authBgImage from "../assets/authafterimg.jpg";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip
+} from "recharts";
 import logger from "../utils/logger";
+
+const chartData = [
+  { name: "MAY", amount: 12 },
+  { name: "JUN", amount: 18 },
+  { name: "JUL", amount: 15 },
+  { name: "AUG", amount: 28 },
+  { name: "SEP", amount: 22 },
+  { name: "OCT", amount: 38 }
+];
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const [stations, setStations] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-
-  const [searchForm, setSearchForm] = useState({
-    source: "",
-    destination: "",
-    date: new Date().toISOString().split("T")[0],
-  });
+  const [bookings, setBookings] = useState([]);
+  const [upcomingBooking, setUpcomingBooking] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchStations();
+    fetchDashboardData();
   }, []);
 
-  const fetchStations = async () => {
+  const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const response = await trainAPI.getStations();
-      const data = Array.isArray(response.data) ? response.data : [];
-      setStations(data);
-    } catch (error) {
-      logger.error("Failed to fetch stations", error);
-      // If public endpoint fails, the stations will remain empty
-      setStations([]);
+      const res = await bookingAPI.getMyBookings();
+      if (res && res.data) {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setBookings(list);
+        
+        // Find the next upcoming journey or most recent
+        const sorted = [...list].sort(
+          (a, b) => new Date(a.travelDate) - new Date(b.travelDate)
+        );
+        const upcoming = sorted.find(
+          (b) => new Date(b.travelDate) >= new Date().setHours(0, 0, 0, 0)
+        );
+        setUpcomingBooking(upcoming || sorted[sorted.length - 1] || null);
+      }
+    } catch (err) {
+      logger.error("Dashboard: failed to load bookings", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchForm.source || !searchForm.destination) return;
+  // Mock fallbacks for visual presentation when data is empty
+  const defaultUpcoming = {
+    pnr: "4528-992-012",
+    travelDate: "2024-10-24",
+    travelTime: "06:00 AM",
+    classType: "Executive Class",
+    sourceStationCode: "NDLS",
+    destinationStationCode: "BOM"
+  };
 
-    try {
-      setIsSearching(true);
-      setHasSearched(true);
-      const response = await trainAPI.searchTrains(
-        searchForm.source,
-        searchForm.destination,
-      );
-      setSearchResults(response.data);
-    } catch (error) {
-      logger.error("Failed to search trains", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+  const currentUpcoming = upcomingBooking
+    ? {
+        pnr: upcomingBooking.pnr,
+        travelDate: upcomingBooking.travelDate,
+        travelTime: upcomingBooking.travelTime || "06:00 AM",
+        classType: upcomingBooking.classType || "AC Chair Car",
+        sourceStationCode: upcomingBooking.sourceStationCode,
+        destinationStationCode: upcomingBooking.destinationStationCode
+      }
+    : defaultUpcoming;
+
+  const mockRecentActivity = [
+    {
+      id: 1,
+      type: "confirm",
+      title: "Booking Confirmed",
+      subtitle: upcomingBooking 
+        ? `Trip to ${upcomingBooking.destinationStationCode} (PNR: ${upcomingBooking.pnr})`
+        : "Trip to Bengaluru (PNR: 982301)",
+      time: "2 HOURS AGO",
+      color: "text-emerald-500 bg-emerald-50 border-emerald-100"
+    },
+    {
+      id: 2,
+      type: "refund",
+      title: "Refund Processed",
+      subtitle: "Ref ID: #TXN-9982 (₹4,250)",
+      time: "5 HOURS AGO",
+      color: "text-blue-500 bg-blue-50 border-blue-100"
+    },
+    {
+      id: 3,
+      type: "alert",
+      title: "Platform Change",
+      subtitle: "Train #12952 (New Delhi) shifted to PF 8",
+      time: "YESTERDAY",
+      color: "text-amber-500 bg-amber-50 border-amber-100"
     }
-  };
-
-  const handleTrainSelect = (train) => {
-    navigate("/trains", {
-      state: {
-        selectedTrain: train,
-        source: searchForm.source,
-        destination: searchForm.destination,
-        date: searchForm.date,
-      },
-    });
-  };
-
-  const quickActions = [
-    { icon: Train, label: "Search Trains", path: "/trains", color: "#E87722" },
-    {
-      icon: Ticket,
-      label: "My Bookings",
-      path: "/my-bookings",
-      color: "#003366",
-    },
-    {
-      icon: CreditCard,
-      label: "Payments",
-      path: "/payments",
-      color: "#28a745",
-    },
   ];
 
-  if (isAdmin) {
-    quickActions.push({
-      icon: Settings,
-      label: "Admin Panel",
-      path: "/admin",
-      color: "#6c757d",
-    });
-  }
-
   return (
-    <div
-      className="dashboard-page"
-      style={{
-        backgroundImage: `url(${authBgImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-        minHeight: "100vh",
-      }}
-    >
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-overlay"></div>
-        <div className="hero-content animate-fadeIn">
-          <h1 className="hero-title">
-            Welcome, {user?.name?.split(" ")[0] || "Traveler"}! 🚂
+    <div className="space-y-8 max-w-[1600px] mx-auto pb-10 font-sans">
+      
+      {/* Top Welcome Title Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+            Welcome back, {user?.name || "Executive Administrator"}
           </h1>
-          <p className="hero-subtitle">
-            Book your train tickets with ease and comfort
+          <p className="text-xs font-semibold text-slate-400 mt-0.5">
+            Global logistics overview and active transport monitoring.
           </p>
-
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="search-form glass-card">
-            <div className="search-inputs">
-              <div className="search-input-group">
-                <label>
-                  <MapPin size={18} /> From
-                </label>
-                <select
-                  value={searchForm.source}
-                  onChange={(e) =>
-                    setSearchForm({ ...searchForm, source: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">Select Source</option>
-                  {stations.map((station) => (
-                    <option key={station.id} value={station.code}>
-                      {station.name} ({station.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="swap-icon">
-                <ArrowRight size={24} />
-              </div>
-
-              <div className="search-input-group">
-                <label>
-                  <MapPin size={18} /> To
-                </label>
-                <select
-                  value={searchForm.destination}
-                  onChange={(e) =>
-                    setSearchForm({
-                      ...searchForm,
-                      destination: e.target.value,
-                    })
-                  }
-                  required
-                >
-                  <option value="">Select Destination</option>
-                  {stations
-                    .filter((s) => s.code !== searchForm.source)
-                    .map((station) => (
-                      <option key={station.id} value={station.code}>
-                        {station.name} ({station.code})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="search-input-group">
-                <label>
-                  <Calendar size={18} /> Date
-                </label>
-                <input
-                  type="date"
-                  value={searchForm.date}
-                  onChange={(e) =>
-                    setSearchForm({ ...searchForm, date: e.target.value })
-                  }
-                  min={new Date().toISOString().split("T")[0]}
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="search-btn btn btn-primary"
-              disabled={isSearching}
-            >
-              <Search size={20} />
-              {isSearching ? "Searching..." : "Search Trains"}
-            </button>
-          </form>
         </div>
-      </section>
-
-      {/* Search Results */}
-      {hasSearched && (
-        <section className="search-results container animate-fadeIn">
-          <h2 className="section-title">
-            <Train size={24} />
-            {isSearching
-              ? "Searching..."
-              : `Found ${searchResults.length} Trains`}
-          </h2>
-
-          {isSearching ? (
-            <Loader text="Searching for trains..." />
-          ) : searchResults.length > 0 ? (
-            <div className="trains-grid">
-              {searchResults.map((train) => (
-                <TrainCard
-                  key={train.id}
-                  train={train}
-                  source={searchForm.source}
-                  destination={searchForm.destination}
-                  onSelect={handleTrainSelect}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">🚂</div>
-              <h3 className="empty-state-title">No trains found</h3>
-              <p>Try different stations or dates</p>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Quick Actions */}
-      <section className="quick-actions container">
-        <h2 className="section-title">
-          <Users size={24} /> Quick Actions
-        </h2>
-
-        <div className="actions-grid">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              className="action-card"
-              onClick={() => navigate(action.path)}
-              style={{ "--accent-color": action.color }}
-            >
-              <div className="action-icon-wrapper">
-                <action.icon size={28} />
-              </div>
-              <span className="action-label">{action.label}</span>
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/trains")}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all"
+          >
+            New Booking
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all"
+          >
+            Generate Report
+          </button>
         </div>
-      </section>
+      </div>
 
-      <style>{`
-        /* Dashboard Page Styles */
-        .dashboard-page {
-          min-height: calc(100vh - 70px);
-          padding-bottom: 2rem;
-        }
+      {/* Main Grid Row (Map and Upcoming card) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left 2 Columns: Live Transit Network map */}
+        <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+          <div className="flex items-center justify-between border-b pb-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              <h3 className="font-bold text-slate-800 text-sm">Live Transit Network</h3>
+            </div>
+            <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              12 Active Journeys
+            </span>
+          </div>
 
-        .container {
-          max-width: 1400px;
-          margin: 0 auto;
-          padding: 0 2rem;
-        }
+          {/* SVG Map of Network */}
+          <div className="flex-1 min-h-[300px] max-h-[380px] bg-slate-50 rounded-xl relative flex items-center justify-center border border-slate-100 overflow-hidden select-none">
+            
+            {/* Mock Map Outline representation */}
+            <svg viewBox="0 0 800 450" className="w-full h-full opacity-30 absolute inset-0 pointer-events-none p-4">
+              <path d="M 150 150 L 300 200 L 450 120 L 600 250 L 700 220" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="6 4" />
+              <path d="M 220 300 L 350 250 L 450 350 L 580 300 L 680 380" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="6 4" />
+              <path d="M 300 200 L 450 350" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="6 4" />
+              <circle cx="150" cy="150" r="6" fill="#cbd5e1" />
+              <circle cx="300" cy="200" r="6" fill="#cbd5e1" />
+              <circle cx="450" cy="120" r="6" fill="#cbd5e1" />
+              <circle cx="600" cy="250" r="6" fill="#cbd5e1" />
+              <circle cx="700" cy="220" r="6" fill="#cbd5e1" />
+              <circle cx="220" cy="300" r="6" fill="#cbd5e1" />
+              <circle cx="350" cy="250" r="6" fill="#cbd5e1" />
+              <circle cx="450" cy="350" r="6" fill="#cbd5e1" />
+              <circle cx="580" cy="300" r="6" fill="#cbd5e1" />
+              <circle cx="680" cy="380" r="6" fill="#cbd5e1" />
+            </svg>
 
-        /* Hero Section */
-        .hero-section {
-          background: rgba(0, 47, 108, 0.85);
-          padding: 3rem 2rem;
-          margin-bottom: 2rem;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        }
+            {/* Pulsing Active Train Dots */}
+            <div className="absolute top-[35%] left-[28%] flex flex-col items-center">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-blue-600"></span>
+              </span>
+            </div>
 
-        .hero-content {
-          max-width: 1200px;
-          margin: 0 auto;
-        }
+            <div className="absolute top-[48%] left-[55%] flex flex-col items-center">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-orange-600"></span>
+              </span>
+            </div>
 
-        .hero-title {
-          font-size: 2.5rem;
-          font-weight: 700;
-          color: white;
-          text-align: center;
-          margin-bottom: 0.5rem;
-          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
+            {/* Map Popup Floating card */}
+            <div className="absolute top-[15%] left-[5%] md:left-[8%] bg-white/95 backdrop-blur border border-slate-200/80 rounded-xl p-4 shadow-lg shadow-slate-100 max-w-xs z-10 font-sans">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+                <span className="font-extrabold text-slate-800 text-xs tracking-tight">VANDE BHARAT #22436</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] mb-3 text-slate-600">
+                <span>Origin:</span>
+                <span className="font-bold text-slate-800 text-right">New Delhi (NDLS)</span>
+                <span>Destination:</span>
+                <span className="font-bold text-slate-800 text-right">Varanasi (BSB)</span>
+              </div>
+              <div className="space-y-1.5 border-t pt-2.5">
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                  <span>65% COMPLETED</span>
+                  <span className="text-blue-700">14:20 ETA</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="bg-blue-600 h-full rounded-full" style={{ width: "65%" }}></div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
 
-        .hero-subtitle {
-          font-size: 1.1rem;
-          color: rgba(255, 255, 255, 0.95);
-          text-align: center;
-          margin-bottom: 2rem;
-          font-weight: 400;
-        }
+        {/* Right 1 Column: Upcoming Journey & Quick Actions */}
+        <div className="space-y-6">
+          
+          {/* Upcoming Journey Gradient Card */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-6 shadow-md shadow-blue-600/10 flex flex-col relative overflow-hidden min-h-[190px]">
+            {/* Decors */}
+            <div className="absolute -right-8 -bottom-8 text-white/5 opacity-10 font-sans font-black text-9xl">
+              🚂
+            </div>
+            
+            <div className="flex justify-between items-start mb-4 border-b border-white/10 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-blue-200/80 uppercase tracking-widest">Upcoming Journey</span>
+                <h4 className="font-extrabold text-sm mt-0.5 tracking-tight">
+                  {currentUpcoming.travelDate}
+                </h4>
+              </div>
+              <div className="bg-white/15 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">
+                {currentUpcoming.classType}
+              </div>
+            </div>
 
-        /* Search Form */
-        .search-form {
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(10px);
-          padding: 2rem;
-          border-radius: 16px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        }
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-left">
+                  <span className="block text-2xl font-black tracking-tight">{currentUpcoming.sourceStationCode}</span>
+                  <span className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">Origin</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center px-4 relative">
+                  <div className="w-full border-t border-dashed border-white/30 absolute top-1/2 -translate-y-1/2"></div>
+                  <Train className="w-4 h-4 text-white z-10 bg-indigo-700 p-0.5 rounded-full" />
+                </div>
+                <div className="text-right">
+                  <span className="block text-2xl font-black tracking-tight">{currentUpcoming.destinationStationCode}</span>
+                  <span className="text-[10px] text-blue-200 font-bold uppercase tracking-wider">Destination</span>
+                </div>
+              </div>
 
-        .search-inputs {
-          display: grid;
-          grid-template-columns: 2fr auto 2fr 1.5fr;
-          gap: 1.5rem;
-          align-items: end;
-          margin-bottom: 1.5rem;
-        }
+              <div className="flex justify-between items-center text-[10px] text-blue-100 font-semibold pt-1">
+                <span>TIME: {currentUpcoming.travelTime}</span>
+                <span className="font-bold bg-indigo-800/50 px-2 py-1 rounded">PNR: {currentUpcoming.pnr}</span>
+              </div>
+            </div>
+          </div>
 
-        .search-input-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
+          {/* Quick Actions Panel */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 border-b pb-2">Quick Actions</h4>
+            <div className="grid grid-cols-2 gap-3.5">
+              <button
+                onClick={() => navigate("/trains")}
+                className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition-all group"
+              >
+                <Search className="w-5 h-5 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-700">Search Trains</span>
+              </button>
 
-        .search-input-group label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: #000000;
-          margin-bottom: 0.25rem;
-        }
+              <button
+                onClick={() => navigate("/my-bookings")}
+                className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition-all group"
+              >
+                <Ticket className="w-5 h-5 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-700">PNR Status</span>
+              </button>
 
-        .search-input-group select,
-        .search-input-group input {
-          padding: 0.875rem 1rem;
-          border: 2px solid #e0e0e0;
-          border-radius: 10px;
-          font-size: 0.95rem;
-          font-family: 'Poppins', sans-serif;
-          transition: all 0.3s ease;
-          background: white;
-          color: #000000;
-          font-weight: 500;
-        }
+              <button
+                onClick={() => {
+                  if (bookings.length > 0) {
+                    navigate("/my-bookings", { state: { searchPnr: bookings[0].pnr } });
+                  } else {
+                    alert("No tickets booked yet.");
+                  }
+                }}
+                className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition-all group"
+              >
+                <FileText className="w-5 h-5 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-700">Last Ticket</span>
+              </button>
 
-        .search-input-group select:focus,
-        .search-input-group input:focus {
-          outline: none;
-          border-color: #f57c00;
-          box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.1);
-        }
+              <button
+                onClick={() => navigate("/contact")}
+                className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition-all group"
+              >
+                <HelpCircle className="w-5 h-5 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-700">Help Desk</span>
+              </button>
+            </div>
+          </div>
 
-        .search-input-group option {
-          color: #000000;
-          background: white;
-          padding: 0.5rem;
-        }
+        </div>
 
-        .swap-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #f57c00;
-          padding-bottom: 0.5rem;
-        }
+      </div>
 
-        .search-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.75rem;
-          width: 100%;
-          padding: 1rem;
-          background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(245, 124, 0, 0.3);
-        }
+      {/* Analytics & Recent Activity Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left 2 Columns: Travel Analytics Line Chart */}
+        <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col h-[320px]">
+          <div className="flex items-center justify-between border-b pb-3 mb-4">
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Travel Analytics</h4>
+            <span className="text-[10px] font-bold text-slate-400">Monthly expenditure & frequency</span>
+          </div>
 
-        .search-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(245, 124, 0, 0.4);
-        }
+          <div className="flex-1 w-full text-xs font-sans select-none">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}k`} />
+                <ChartTooltip formatter={(value) => [`₹${value},000`, "Spent"]} contentStyle={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0" }} />
+                <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, stroke: "#ffffff", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        .search-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+        {/* Right 1 Column: Recent Activity Logger */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col h-[320px]">
+          <div className="flex items-center justify-between border-b pb-3 mb-4">
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Recent Activity</h4>
+            <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded tracking-wider">LIVE</span>
+          </div>
 
-        /* Search Results */
-        .search-results {
-          margin-top: 2rem;
-        }
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            {mockRecentActivity.map((act) => (
+              <div key={act.id} className="flex gap-3 text-xs leading-normal">
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${act.color}`}>
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-800">{act.title}</span>
+                    <span className="text-[9px] text-slate-400 font-extrabold">{act.time}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{act.subtitle}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        .section-title {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #000000;
-          margin-bottom: 1.5rem;
-        }
+      </div>
 
-        .trains-grid {
-          display: grid;
-          gap: 1.5rem;
-        }
+      {/* KPI Cards Bottom Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <Train className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Journeys</span>
+            <span className="text-lg font-black text-slate-800 mt-0.5 leading-none">
+              {bookings.length > 0 ? bookings.length : "128"}
+            </span>
+          </div>
+        </div>
 
-        .empty-state {
-          text-align: center;
-          padding: 4rem 2rem;
-          background: rgba(255, 255, 255, 0.95);
-          border-radius: 16px;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">On-Time Rate</span>
+            <span className="text-lg font-black text-slate-800 mt-0.5 leading-none">94%</span>
+          </div>
+        </div>
 
-        .empty-state-icon {
-          font-size: 4rem;
-          margin-bottom: 1rem;
-        }
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <User className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Loyalty Tier</span>
+            <span className="text-lg font-black text-slate-800 mt-0.5 leading-none">Elite</span>
+          </div>
+        </div>
 
-        .empty-state-title {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #000000;
-          margin-bottom: 0.5rem;
-        }
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Alert Status</span>
+            <span className="text-lg font-black text-slate-800 mt-0.5 leading-none">None</span>
+          </div>
+        </div>
 
-        .empty-state p {
-          font-size: 1rem;
-          color: #000000;
-        }
+      </div>
 
-        /* Quick Actions */
-        .quick-actions {
-          margin-top: 3rem;
-        }
-
-        .actions-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-        }
-
-        .action-card {
-          background: rgba(255, 255, 255, 0.95);
-          border: 2px solid transparent;
-          border-radius: 16px;
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .action-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-          border-color: var(--accent-color);
-        }
-
-        .action-icon-wrapper {
-          width: 64px;
-          height: 64px;
-          background: linear-gradient(135deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 80%, black));
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px color-mix(in srgb, var(--accent-color) 40%, transparent);
-        }
-
-        .action-card:hover .action-icon-wrapper {
-          transform: scale(1.1);
-        }
-
-        .action-label {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #000000;
-          text-align: center;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-          .search-inputs {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-          }
-
-          .swap-icon {
-            transform: rotate(90deg);
-            padding: 0;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .hero-title {
-            font-size: 1.75rem;
-          }
-
-          .hero-subtitle {
-            font-size: 1rem;
-          }
-
-          .search-form {
-            padding: 1.5rem;
-          }
-
-          .section-title {
-            font-size: 1.5rem;
-          }
-
-          .actions-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 };

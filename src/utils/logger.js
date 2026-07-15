@@ -1,27 +1,18 @@
 /**
  * Logger utility to avoid console usage in production builds.
+ * Disabled general logs/debugs for security, preserving error logging to stderr.
  */
 const isDevelopment = import.meta.env?.DEV === true;
 
 const logger = {
   log: (message, data = null) => {
-    if (!isDevelopment) return;
-    if (data !== null && data !== undefined) {
-      console.log(`[LOG] ${message}`, data);
-    } else {
-      console.log(`[LOG] ${message}`);
-    }
+    // Disabled for security - do not print general logs to browser console
   },
   info: (message, data = null) => {
-    if (!isDevelopment) return;
-    if (data !== null && data !== undefined) {
-      console.info(`[INFO] ${message}`, data);
-    } else {
-      console.info(`[INFO] ${message}`);
-    }
+    // Disabled for security - do not print info logs to browser console
   },
   warn: (message, data = null) => {
-    if (!isDevelopment) return;
+    // Warnings are written to console.warn (collected in error streams)
     if (data !== null && data !== undefined) {
       console.warn(`[WARN] ${message}`, data);
     } else {
@@ -29,7 +20,7 @@ const logger = {
     }
   },
   error: (message, error = null) => {
-    if (!isDevelopment) return;
+    // Errors are written to console.error (which writes to stderr and is captured by logging dashboards)
     if (error !== null && error !== undefined) {
       console.error(`[ERROR] ${message}`, error);
     } else {
@@ -37,12 +28,7 @@ const logger = {
     }
   },
   debug: (message, data = null) => {
-    if (!isDevelopment) return;
-    if (data !== null && data !== undefined) {
-      console.debug(`[DEBUG] ${message}`, data);
-    } else {
-      console.debug(`[DEBUG] ${message}`);
-    }
+    // Disabled for security - do not leak debugging trace details
   },
 };
 

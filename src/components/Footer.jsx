@@ -1,9 +1,20 @@
 import React from "react";
-import { Train, Mail, Phone, MapPin, Heart, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import {
+  Train,
+  Mail,
+  Phone,
+  MapPin,
+  Heart,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+} from "lucide-react";
+import logger from "../utils/logger";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  console.log("✅ Footer component loaded"); // Debug log
+  logger.debug("Footer component loaded");
 
   return (
     <footer className="app-footer">
@@ -15,7 +26,8 @@ const Footer = () => {
             <span className="text-xl md:text-2xl">IRCTC</span>
           </div>
           <p className="footer-tagline text-sm md:text-base mt-3">
-            Your trusted partner for seamless railway bookings across India. Travel safe, travel smart.
+            Your trusted partner for seamless railway bookings across India.
+            Travel safe, travel smart.
           </p>
           <div className="footer-social">
             <a href="#" aria-label="Facebook" className="social-link">
@@ -37,10 +49,18 @@ const Footer = () => {
         <div className="footer-section">
           <h3 className="footer-heading">Quick Links</h3>
           <ul className="footer-links">
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/trains">Book Trains</a></li>
-            <li><a href="/my-bookings">My Bookings</a></li>
-            <li><a href="/payments">Payments</a></li>
+            <li>
+              <a href="/dashboard">Dashboard</a>
+            </li>
+            <li>
+              <a href="/trains">Book Trains</a>
+            </li>
+            <li>
+              <a href="/my-bookings">My Bookings</a>
+            </li>
+            <li>
+              <a href="/payments">Payments</a>
+            </li>
           </ul>
         </div>
 
@@ -48,10 +68,18 @@ const Footer = () => {
         <div className="footer-section">
           <h3 className="footer-heading">Support</h3>
           <ul className="footer-links">
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">FAQs</a></li>
-            <li><a href="#">Terms & Conditions</a></li>
-            <li><a href="#">Privacy Policy</a></li>
+            <li>
+              <a href="#">Help Center</a>
+            </li>
+            <li>
+              <a href="#">FAQs</a>
+            </li>
+            <li>
+              <a href="#">Terms & Conditions</a>
+            </li>
+            <li>
+              <a href="#">Privacy Policy</a>
+            </li>
           </ul>
         </div>
 
@@ -77,9 +105,7 @@ const Footer = () => {
 
       {/* Bottom Bar */}
       <div className="footer-bottom">
-        <p>
-          © {currentYear} IRCTC Railway Booking. All rights reserved.
-        </p>
+        <p>© {currentYear} IRCTC Railway Booking. All rights reserved.</p>
         <p className="footer-credits">
           Made with <Heart size={14} className="heart-icon" /> for travelers
         </p>

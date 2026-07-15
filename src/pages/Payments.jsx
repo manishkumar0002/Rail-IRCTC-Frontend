@@ -20,20 +20,23 @@ import {
 } from "lucide-react";
 import Loader from "../components/Loader";
 import authBgImage from "../assets/authafterimg.jpg";
+import logger from "../utils/logger";
 
 export default function Payments() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
-  
+
   // For admin view
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  
+
   // For user payment
   const [booking, setBooking] = useState(location.state?.booking || null);
-  const [trainDetails, setTrainDetails] = useState(location.state?.train || null);
+  const [trainDetails, setTrainDetails] = useState(
+    location.state?.train || null,
+  );
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'failed', null
@@ -638,13 +641,13 @@ export default function Payments() {
   );
 
   useEffect(() => {
-    console.log("🔵 Payments component loaded");
-    console.log("📍 Location state:", location.state);
-    console.log("📍 Booking from state:", booking);
-    console.log("📍 Train details from state:", trainDetails);
-    console.log("👤 User info:", user);
-    console.log("🔑 Is Admin:", isAdmin);
-    
+    logger.debug("Payments component loaded");
+    logger.debug("Location state", location.state);
+    logger.debug("Booking from state", booking);
+    logger.debug("Train details from state", trainDetails);
+    logger.debug("User info", user);
+    logger.debug("Is Admin", isAdmin);
+
     // Only fetch payments if this is admin view and no booking data
     if (isAdmin === true && !booking) {
       fetchPayments();
@@ -658,7 +661,7 @@ export default function Payments() {
       const response = await adminAPI.getAllPayments();
       setPayments(response.data);
     } catch (error) {
-      console.error("Failed to fetch payments:", error);
+      logger.error("Failed to fetch payments", error);
     } finally {
       setIsLoading(false);
     }
@@ -671,18 +674,21 @@ export default function Payments() {
       return;
     }
 
-    console.log("🔵 Payment initiated for booking:", booking);
-    console.log("🔵 Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID);
+    logger.debug("Payment initiated for booking", booking);
+    logger.debug(
+      "Razorpay Key configured",
+      !!import.meta.env.VITE_RAZORPAY_KEY_ID,
+    );
 
     try {
       setIsProcessing(true);
 
       // Step 1: Create payment order
-      console.log("📢 Creating payment order for booking ID:", booking.id);
+      logger.debug("Creating payment order for booking ID", booking.id);
       const orderResponse = await paymentAPI.createPaymentOrder(booking.id);
       const paymentOrder = orderResponse.data;
-      
-      console.log("✅ Payment order created:", paymentOrder);
+
+      logger.debug("Payment order created", paymentOrder);
 
       if (!paymentOrder.orderId) {
         throw new Error("Order ID not received from backend");
@@ -690,21 +696,23 @@ export default function Payments() {
 
       // Check if Razorpay key is set
       if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-        console.error("❌ VITE_RAZORPAY_KEY_ID is not set in environment variables");
+        logger.error(
+          "VITE_RAZORPAY_KEY_ID is not set in environment variables",
+        );
         alert("Payment configuration error. Please contact support.");
         setIsProcessing(false);
         return;
       }
 
       // Step 2: Load Razorpay script
-      console.log("📦 Loading Razorpay script...");
+      logger.debug("Loading Razorpay script");
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
-      
+
       script.onload = () => {
-        console.log("✅ Razorpay script loaded successfully");
-        
+        logger.debug("Razorpay script loaded successfully");
+
         // Step 3: Open Razorpay payment modal
         const options = {
           key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -713,11 +721,11 @@ export default function Payments() {
           order_id: paymentOrder.orderId,
           name: "Rail IRCTC",
           description: `Booking for ${trainDetails?.trainNumber} - ${booking.seatCount} seat(s)`,
-          
+
           handler: async (response) => {
             try {
-              console.log("✅ Payment successful from Razorpay:", response);
-              
+              logger.debug("Payment successful from Razorpay", response);
+
               // Step 4: Verify payment
               const verifyData = {
                 bookingId: booking.id,
@@ -726,27 +734,30 @@ export default function Payments() {
                 signature: response.razorpay_signature,
               };
 
-              console.log("📢 Verifying payment on backend...", verifyData);
+              logger.debug("Verifying payment on backend", verifyData);
               const verifyResponse = await paymentAPI.verifyPayment(verifyData);
-              
-              console.log("✅ Payment verified:", verifyResponse);
-              
-              if (verifyResponse.data.status === "SUCCESS" || verifyResponse.status === 200) {
+
+              logger.debug("Payment verified", verifyResponse);
+
+              if (
+                verifyResponse.data.status === "SUCCESS" ||
+                verifyResponse.status === 200
+              ) {
                 setPaymentStatus("success");
-                console.log("✅ Payment status set to SUCCESS");
+                logger.debug("Payment status set to SUCCESS");
                 setTimeout(() => {
-                  navigate("/my-bookings", { 
-                    state: { 
+                  navigate("/my-bookings", {
+                    state: {
                       paymentSuccess: true,
-                      pnr: booking.pnr 
-                    } 
+                      pnr: booking.pnr,
+                    },
                   });
                 }, 3000);
               } else {
                 throw new Error("Payment verification failed");
               }
             } catch (error) {
-              console.error("❌ Payment verification error:", error);
+              logger.error("Payment verification error", error);
               setPaymentStatus("failed");
               setIsProcessing(false);
             }
@@ -763,28 +774,27 @@ export default function Payments() {
 
           modal: {
             ondismiss: () => {
-              console.log("⚠️ Payment modal closed by user");
+              logger.warn("Payment modal closed by user");
               setIsProcessing(false);
             },
           },
         };
 
-        console.log("🎯 Razorpay options:", options);
+        logger.debug("Razorpay options", options);
         const razorpay = new window.Razorpay(options);
-        console.log("🎯 Opening Razorpay modal...");
+        logger.debug("Opening Razorpay modal");
         razorpay.open();
       };
 
       script.onerror = () => {
-        console.error("❌ Failed to load Razorpay script");
+        logger.error("Failed to load Razorpay script");
         alert("Failed to load payment gateway. Please try again.");
         setIsProcessing(false);
       };
 
       document.body.appendChild(script);
-
     } catch (error) {
-      console.error("❌ Payment initiation failed:", error);
+      logger.error("Payment initiation failed", error);
       alert(`Payment error: ${error.message}`);
       setPaymentStatus("failed");
       setIsProcessing(false);
@@ -841,7 +851,9 @@ export default function Payments() {
             <h1>❌ Booking Not Found</h1>
             <p>Unable to load booking details. Please go back and try again.</p>
             <div className="error-details">
-              <p><strong>Debug Info:</strong></p>
+              <p>
+                <strong>Debug Info:</strong>
+              </p>
               <p>Booking: {booking ? "✅ Loaded" : "❌ Missing"}</p>
               <p>Location: {location.state ? "✅ Present" : "❌ Missing"}</p>
               <p>User: {user?.email || "❌ Not logged in"}</p>
@@ -870,7 +882,8 @@ export default function Payments() {
             </div>
             <h1>Payment Successful!</h1>
             <p className="result-message">
-              Your booking has been confirmed. PNR: <strong>{booking?.pnr}</strong>
+              Your booking has been confirmed. PNR:{" "}
+              <strong>{booking?.pnr}</strong>
             </p>
             <div className="result-details">
               <p>A confirmation email has been sent to {user?.email}</p>
@@ -897,13 +910,13 @@ export default function Payments() {
               Your payment could not be processed. Please try again.
             </p>
             <div className="result-actions">
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={() => setPaymentStatus(null)}
               >
                 Try Again
               </button>
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={() => navigate("/my-bookings")}
               >
@@ -932,14 +945,18 @@ export default function Payments() {
               {/* Booking Summary */}
               <div className="booking-summary-card">
                 <h2 className="card-title">Booking Summary</h2>
-                
+
                 <div className="summary-section">
                   <div className="summary-header">
                     <Train size={20} />
                     <span>Train Details</span>
                   </div>
                   <div className="summary-details">
-                    <p><strong>{trainDetails?.trainNumber} - {trainDetails?.trainName}</strong></p>
+                    <p>
+                      <strong>
+                        {trainDetails?.trainNumber} - {trainDetails?.trainName}
+                      </strong>
+                    </p>
                     <div className="journey-info">
                       <span>{location.state?.source}</span>
                       <ArrowRight size={16} />
@@ -969,7 +986,9 @@ export default function Payments() {
                     <Users size={20} />
                     <span>Passengers</span>
                   </div>
-                  <p className="summary-value">{booking.seatCount} Passenger(s)</p>
+                  <p className="summary-value">
+                    {booking.seatCount} Passenger(s)
+                  </p>
                   <p className="summary-value">Class: {booking.classType}</p>
                 </div>
 
@@ -982,7 +1001,7 @@ export default function Payments() {
               {/* Payment Methods */}
               <div className="payment-methods-card">
                 <h2 className="card-title">Select Payment Method</h2>
-                
+
                 <div className="payment-methods">
                   {paymentMethods.map((method) => (
                     <button
@@ -1054,14 +1073,14 @@ export default function Payments() {
 
   // Admin Payments View
   return (
-    <div 
+    <div
       className="payments-page"
       style={{
         backgroundImage: `url(${authBgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        minHeight: '100vh'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        minHeight: "100vh",
       }}
     >
       <div className="container">
@@ -1109,9 +1128,7 @@ export default function Payments() {
                       </span>
                     </td>
                     <td>
-                      <span className="pnr-badge">
-                        {payment.booking.pnr}
-                      </span>
+                      <span className="pnr-badge">{payment.booking.pnr}</span>
                     </td>
                     <td>
                       <div className="user-info">
@@ -1132,21 +1149,22 @@ export default function Payments() {
                     <td>
                       <div className="timestamp">
                         <Calendar size={14} />
-                        {new Date(
-                          payment.paymentTimestamp
-                        ).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(payment.paymentTimestamp).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
                       </div>
                     </td>
                     <td>
                       <span
                         className={`status-badge ${getStatusClass(
-                          payment.paymentStatus
+                          payment.paymentStatus,
                         )}`}
                       >
                         {getStatusIcon(payment.paymentStatus)}
@@ -1177,7 +1195,7 @@ export default function Payments() {
             <span className="stat-value">
               {
                 payments.filter(
-                  (p) => p.paymentStatus?.toLowerCase() === "success"
+                  (p) => p.paymentStatus?.toLowerCase() === "success",
                 ).length
               }
             </span>
@@ -1187,7 +1205,7 @@ export default function Payments() {
             <span className="stat-value">
               {
                 payments.filter(
-                  (p) => p.paymentStatus?.toLowerCase() === "failed"
+                  (p) => p.paymentStatus?.toLowerCase() === "failed",
                 ).length
               }
             </span>

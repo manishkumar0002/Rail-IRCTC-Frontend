@@ -16,6 +16,7 @@ import {
 import Loader from "../components/Loader";
 import TrainCard from "../components/TrainCard";
 import authBgImage from "../assets/authafterimg.jpg";
+import logger from "../utils/logger";
 
 const Dashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -44,7 +45,7 @@ const Dashboard = () => {
       const data = Array.isArray(response.data) ? response.data : [];
       setStations(data);
     } catch (error) {
-      console.error("Failed to fetch stations:", error);
+      logger.error("Failed to fetch stations", error);
       // If public endpoint fails, the stations will remain empty
       setStations([]);
     } finally {
@@ -61,11 +62,11 @@ const Dashboard = () => {
       setHasSearched(true);
       const response = await trainAPI.searchTrains(
         searchForm.source,
-        searchForm.destination
+        searchForm.destination,
       );
       setSearchResults(response.data);
     } catch (error) {
-      console.error("Failed to search trains:", error);
+      logger.error("Failed to search trains", error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -85,8 +86,18 @@ const Dashboard = () => {
 
   const quickActions = [
     { icon: Train, label: "Search Trains", path: "/trains", color: "#E87722" },
-    { icon: Ticket, label: "My Bookings", path: "/my-bookings", color: "#003366" },
-    { icon: CreditCard, label: "Payments", path: "/payments", color: "#28a745" },
+    {
+      icon: Ticket,
+      label: "My Bookings",
+      path: "/my-bookings",
+      color: "#003366",
+    },
+    {
+      icon: CreditCard,
+      label: "Payments",
+      path: "/payments",
+      color: "#28a745",
+    },
   ];
 
   if (isAdmin) {
@@ -99,14 +110,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div 
+    <div
       className="dashboard-page"
       style={{
         backgroundImage: `url(${authBgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        minHeight: '100vh'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        minHeight: "100vh",
       }}
     >
       {/* Hero Section */}

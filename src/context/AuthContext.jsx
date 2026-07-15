@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { authAPI, clearAuthStorage } from "../services/api";
+import logger from "../utils/logger";
 
 const AuthContext = createContext(null);
 
@@ -16,12 +17,12 @@ const decodeToken = (token) => {
       atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
 
     return JSON.parse(jsonPayload);
   } catch (err) {
-    console.error("❌ Failed to decode token:", err);
+    logger.error("Failed to decode token", err);
     return null;
   }
 };
@@ -45,9 +46,9 @@ export const AuthProvider = ({ children }) => {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
-        console.log("✅ Session restored from localStorage");
+        logger.debug("Session restored from localStorage");
       } catch (err) {
-        console.error("❌ Session restore failed:", err);
+        logger.error("Session restore failed", err);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
@@ -60,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   ================================ */
   const login = async (email, password) => {
     try {
-      console.log("🔐 Attempting login:", email);
+      logger.debug("Attempting login", email);
 
       const res = await authAPI.login(email, password);
 
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const decoded = decodeToken(res.data.token);
-      console.log("🔍 Decoded JWT:", decoded);
+      logger.debug("Decoded JWT", decoded);
 
       const userData = {
         email: decoded.sub,
@@ -83,10 +84,10 @@ export const AuthProvider = ({ children }) => {
       setToken(res.data.token);
       setUser(userData);
 
-      console.log("✅ Login successful:", userData);
+      logger.debug("Login successful", userData);
       return userData;
     } catch (err) {
-      console.error("❌ Login failed:", err.response?.data || err.message);
+      logger.error("Login failed", err.response?.data || err.message);
       throw err;
     }
   };
@@ -97,10 +98,10 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       const res = await authAPI.register(name, email, password);
-      console.log("✅ Registration successful");
+      logger.debug("Registration successful");
       return res.data;
     } catch (err) {
-      console.error("❌ Registration failed:", err.response?.data || err.message);
+      logger.error("Registration failed", err.response?.data || err.message);
       throw err;
     }
   };
@@ -110,10 +111,10 @@ export const AuthProvider = ({ children }) => {
   ================================ */
   const loginWithToken = async (jwt) => {
     try {
-      console.log("🔑 Logging in with OAuth token");
+      logger.debug("Logging in with OAuth token");
 
       const decoded = decodeToken(jwt);
-      console.log("🔍 Decoded OAuth JWT:", decoded);
+      logger.debug("Decoded OAuth JWT", decoded);
 
       const userData = {
         email: decoded.sub,
@@ -127,9 +128,9 @@ export const AuthProvider = ({ children }) => {
       setToken(jwt);
       setUser(userData);
 
-      console.log("✅ OAuth login successful:", userData);
+      logger.debug("OAuth login successful", userData);
     } catch (err) {
-      console.error("❌ OAuth login failed:", err);
+      logger.error("OAuth login failed", err);
       logout();
       throw err;
     } finally {
@@ -141,49 +142,58 @@ export const AuthProvider = ({ children }) => {
      🚪 Logout
   ================================ */
   const logout = () => {
-    console.log("🚪 Logging out...");
-    
+    logger.info("Logging out");
+
     // Clear all authentication data
     clearAuthStorage();
-    
+
     // Clear React state
     setUser(null);
     setToken(null);
-    
+
     // Clear all localStorage
     localStorage.clear();
-    
+
     // Clear all sessionStorage
     sessionStorage.clear();
-    
+
     // Clear IndexedDB if exists
     if (window.indexedDB) {
-      window.indexedDB.databases().then((databases) => {
-        databases.forEach((db) => {
-          window.indexedDB.deleteDatabase(db.name);
-        });
-      }).catch((err) => console.warn("IndexedDB clear failed:", err));
+      window.indexedDB
+        .databases()
+        .then((databases) => {
+          databases.forEach((db) => {
+            window.indexedDB.deleteDatabase(db.name);
+          });
+        })
+        .catch((err) => logger.warn("IndexedDB clear failed", err));
     }
-    
+
     // Clear service worker cache
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => {
-          caches.delete(name);
-        });
-      }).catch((err) => console.warn("Cache clear failed:", err));
+    if ("caches" in window) {
+      caches
+        .keys()
+        .then((names) => {
+          names.forEach((name) => {
+            caches.delete(name);
+          });
+        })
+        .catch((err) => logger.warn("Cache clear failed", err));
     }
-    
+
     // Unregister service workers
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister();
-        });
-      }).catch((err) => console.warn("Service worker unregister failed:", err));
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+          });
+        })
+        .catch((err) => logger.warn("Service worker unregister failed", err));
     }
-    
-    console.log("✅ Logged out and cleared all cache/session data");
+
+    logger.info("Logged out and cleared all cache/session data");
   };
 
   return (

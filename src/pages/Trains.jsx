@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { trainAPI, adminAPI, bookingAPI } from "../services/api";
-import { Train, Search, MapPin, Calendar, Users, ChevronRight } from "lucide-react";
+import {
+  Train,
+  Search,
+  MapPin,
+  Calendar,
+  Users,
+  ChevronRight,
+} from "lucide-react";
 import Loader from "../components/Loader";
 import TrainCard from "../components/TrainCard";
 import Modal from "../components/Modal";
 import ToastContainer from "../components/ToastContainer";
 import useToast from "../hooks/useToast";
 import authBgImage from "../assets/authafterimg.jpg";
+import logger from "../utils/logger";
 
 const classTypes = [
   { value: "SL", label: "Sleeper (SL)" },
@@ -89,7 +97,10 @@ export default function Trains() {
       return;
     }
 
-    if (!isValidCode(searchForm.source) || !isValidCode(searchForm.destination)) {
+    if (
+      !isValidCode(searchForm.source) ||
+      !isValidCode(searchForm.destination)
+    ) {
       error("Invalid station selection. Please re-select stations.");
       setSearchForm({ ...searchForm, source: "", destination: "" });
       return;
@@ -99,7 +110,7 @@ export default function Trains() {
       setIsSearching(true);
       const res = await trainAPI.searchTrains(
         searchForm.source,
-        searchForm.destination
+        searchForm.destination,
       );
       setTrains(res.data);
       setHasSearched(true);
@@ -115,12 +126,19 @@ export default function Trains() {
 
   const handleSelectTrain = async (train) => {
     if (!hasSearched) {
-      error("Please search with source & destination first, then select a train from those results.");
+      error(
+        "Please search with source & destination first, then select a train from those results.",
+      );
       return;
     }
 
-    if (!isValidCode(searchForm.source) || !isValidCode(searchForm.destination)) {
-      error("Invalid station selection. Please re-select stations and search again.");
+    if (
+      !isValidCode(searchForm.source) ||
+      !isValidCode(searchForm.destination)
+    ) {
+      error(
+        "Invalid station selection. Please re-select stations and search again.",
+      );
       return;
     }
 
@@ -136,7 +154,10 @@ export default function Trains() {
   };
 
   const checkSeatAvailability = async (trainId, classType) => {
-    if (!isValidCode(searchForm.source) || !isValidCode(searchForm.destination)) {
+    if (
+      !isValidCode(searchForm.source) ||
+      !isValidCode(searchForm.destination)
+    ) {
       error("Invalid station selection. Please re-select stations.");
       return;
     }
@@ -146,14 +167,14 @@ export default function Trains() {
       const res = await trainAPI.getSeatAvailability(
         trainId,
         searchForm.date,
-        classType
+        classType,
       );
       setSeatAvailability(res.data);
     } catch (err) {
-      console.error("Seat check failed:", err);
+      logger.error("Seat check failed", err);
       error(
         err.response?.data?.message ||
-          "Seat availability not found for this train on this date."
+          "Seat availability not found for this train on this date.",
       );
       setSeatAvailability(null);
     } finally {
@@ -167,8 +188,10 @@ export default function Trains() {
   };
 
   const handlePassengerCountChange = (count) => {
-    const passengers = Array.from({ length: count }, (_, i) =>
-      bookingForm.passengers[i] || { name: "", age: "", gender: "Male" }
+    const passengers = Array.from(
+      { length: count },
+      (_, i) =>
+        bookingForm.passengers[i] || { name: "", age: "", gender: "Male" },
     );
     setBookingForm({ ...bookingForm, seatCount: count, passengers });
   };
@@ -182,7 +205,10 @@ export default function Trains() {
   const handleBooking = async () => {
     if (!selectedTrain) return;
 
-    if (!isValidCode(searchForm.source) || !isValidCode(searchForm.destination)) {
+    if (
+      !isValidCode(searchForm.source) ||
+      !isValidCode(searchForm.destination)
+    ) {
       error("Invalid station selection. Please re-select stations.");
       return;
     }
@@ -190,9 +216,11 @@ export default function Trains() {
     const isTrainOnRoute = async (trainId, sourceCode, destinationCode) => {
       try {
         const res = await trainAPI.searchTrains(sourceCode, destinationCode);
-        return Array.isArray(res.data) && res.data.some((t) => t.id === trainId);
+        return (
+          Array.isArray(res.data) && res.data.some((t) => t.id === trainId)
+        );
       } catch (err) {
-        console.error("Route validation failed", err);
+        logger.error("Route validation failed", err);
         return false;
       }
     };
@@ -208,11 +236,13 @@ export default function Trains() {
       const onRoute = await isTrainOnRoute(
         selectedTrain.id,
         searchForm.source.toUpperCase(),
-        searchForm.destination.toUpperCase()
+        searchForm.destination.toUpperCase(),
       );
 
       if (!onRoute) {
-        error("Selected train does not run between these stations. Please pick a listed result after searching.");
+        error(
+          "Selected train does not run between these stations. Please pick a listed result after searching.",
+        );
         return;
       }
 
@@ -227,7 +257,7 @@ export default function Trains() {
         passengers: bookingForm.passengers,
       };
 
-      console.log("📤 Booking payload", payload);
+      logger.debug("Booking payload", payload);
 
       const res = await bookingAPI.createBooking(payload);
 
@@ -244,14 +274,14 @@ export default function Trains() {
   if (isLoading) return <Loader fullScreen text="Loading trains..." />;
 
   return (
-    <div 
+    <div
       className="trains-page"
       style={{
         backgroundImage: `url(${authBgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        minHeight: '100vh'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        minHeight: "100vh",
       }}
     >
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -259,7 +289,10 @@ export default function Trains() {
       {/* Search Section */}
       <section className="search-section">
         <div className="container">
-          <form onSubmit={handleSearch} className="search-form-inline glass-card">
+          <form
+            onSubmit={handleSearch}
+            className="search-form-inline glass-card"
+          >
             <div className="search-field">
               <label>
                 <MapPin size={16} /> From
@@ -410,7 +443,7 @@ export default function Trains() {
               </div>
             ) : (
               <div className="seat-info error">
-                 Seat availability not found for this class
+                Seat availability not found for this class
               </div>
             )}
 

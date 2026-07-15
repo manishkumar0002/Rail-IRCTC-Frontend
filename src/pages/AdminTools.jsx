@@ -20,11 +20,12 @@ import ToastContainer from "../components/ToastContainer";
 import useToast from "../hooks/useToast";
 import Modal from "../components/Modal";
 import authBgImage from "../assets/authafterimg.jpg";
+import logger from "../utils/logger";
 
 const AdminTools = () => {
   const { isAdmin } = useAuth();
   const { toasts, success, error, removeToast } = useToast();
-  const [activeSection, setActiveSection] = useState("trains");
+  const [activeSection, setActiveSection] = useState("analytics");
   const [isLoading, setIsLoading] = useState(true);
 
   // Data states
@@ -33,6 +34,7 @@ const AdminTools = () => {
   const [bookings, setBookings] = useState([]);
   const [payments, setPayments] = useState([]);
   const [routes, setRoutes] = useState({});
+  const [analytics, setAnalytics] = useState(null);
 
   // Form states
   const [trainForm, setTrainForm] = useState({
@@ -73,59 +75,89 @@ const AdminTools = () => {
   const fetchAllData = async () => {
     try {
       setIsLoading(true);
-      console.log("📊 Fetching admin data...");
-      
-       // Use allSettled to handle individual request failures gracefully
-       const results = await Promise.allSettled([
-         adminAPI.getTrains(),
-         adminAPI.getStations(),
-         adminAPI.getAllBookings(),
-         adminAPI.getAllPayments(),
-       ]);
-     
-       const [trainsRes, stationsRes, bookingsRes, paymentsRes] = results;
-     
-       // Handle trains
-       if (trainsRes.status === "fulfilled") {
-         setTrains(Array.isArray(trainsRes.value?.data) ? trainsRes.value.data : []);
-         console.log("✅ Trains loaded:", trainsRes.value?.data?.length);
-       } else {
-         console.warn("⚠️ Failed to load trains:", trainsRes.reason?.response?.data?.message);
-         setTrains([]);
-       }
-     
-       // Handle stations
-       if (stationsRes.status === "fulfilled") {
-         setStations(Array.isArray(stationsRes.value?.data) ? stationsRes.value.data : []);
-         console.log("✅ Stations loaded:", stationsRes.value?.data?.length);
-       } else {
-         console.warn("⚠️ Failed to load stations:", stationsRes.reason?.response?.data?.message);
-         setStations([]);
-       }
-     
-       // Handle bookings
-       if (bookingsRes.status === "fulfilled") {
-         setBookings(Array.isArray(bookingsRes.value?.data) ? bookingsRes.value.data : []);
-         console.log("✅ Bookings loaded:", bookingsRes.value?.data?.length);
-       } else {
-         console.warn("⚠️ Failed to load bookings:", bookingsRes.reason?.response?.data?.message);
-         setBookings([]);
-       }
-     
-       // Handle payments (most likely to fail)
-       if (paymentsRes.status === "fulfilled") {
-         setPayments(Array.isArray(paymentsRes.value?.data) ? paymentsRes.value.data : []);
-         console.log("✅ Payments loaded:", paymentsRes.value?.data?.length);
-       } else {
-         console.warn("⚠️ Failed to load payments - backend issue:", paymentsRes.reason?.response?.status, paymentsRes.reason?.response?.data?.message);
-         setPayments([]);
-       }
-     
-       // Show success if at least some data loaded
-       success("Admin data loaded successfully");
-     } catch (err) {
-       console.error("❌ Unexpected error fetching admin data:", err);
-       error("Unexpected error: " + err.message);
+      logger.debug("Fetching admin data");
+
+      // Use allSettled to handle individual request failures gracefully
+      const results = await Promise.allSettled([
+        adminAPI.getTrains(),
+        adminAPI.getStations(),
+        adminAPI.getAllBookings(),
+        adminAPI.getAllPayments(),
+        adminAPI.getAnalyticsDashboard(),
+      ]);
+
+      const [trainsRes, stationsRes, bookingsRes, paymentsRes, analyticsRes] = results;
+
+      // Handle trains
+      if (trainsRes.status === "fulfilled") {
+        setTrains(
+          Array.isArray(trainsRes.value?.data) ? trainsRes.value.data : [],
+        );
+        logger.debug("Trains loaded", trainsRes.value?.data?.length);
+      } else {
+        logger.warn(
+          "Failed to load trains",
+          trainsRes.reason?.response?.data?.message,
+        );
+        setTrains([]);
+      }
+
+      // Handle stations
+      if (stationsRes.status === "fulfilled") {
+        setStations(
+          Array.isArray(stationsRes.value?.data) ? stationsRes.value.data : [],
+        );
+        logger.debug("Stations loaded", stationsRes.value?.data?.length);
+      } else {
+        logger.warn(
+          "Failed to load stations",
+          stationsRes.reason?.response?.data?.message,
+        );
+        setStations([]);
+      }
+
+      // Handle bookings
+      if (bookingsRes.status === "fulfilled") {
+        setBookings(
+          Array.isArray(bookingsRes.value?.data) ? bookingsRes.value.data : [],
+        );
+        logger.debug("Bookings loaded", bookingsRes.value?.data?.length);
+      } else {
+        logger.warn(
+          "Failed to load bookings",
+          bookingsRes.reason?.response?.data?.message,
+        );
+        setBookings([]);
+      }
+
+      // Handle payments (most likely to fail)
+      if (paymentsRes.status === "fulfilled") {
+        setPayments(
+          Array.isArray(paymentsRes.value?.data) ? paymentsRes.value.data : [],
+        );
+        logger.debug("Payments loaded", paymentsRes.value?.data?.length);
+      } else {
+        logger.warn(
+          "Failed to load payments - backend issue",
+          paymentsRes.reason?.response?.status ||
+            paymentsRes.reason?.response?.data?.message,
+        );
+        setPayments([]);
+      }
+
+      // Handle analytics
+      if (analyticsRes.status === "fulfilled") {
+        setAnalytics(analyticsRes.value.data?.data || analyticsRes.value.data || null);
+      } else {
+        logger.warn("Failed to load analytics dashboard data");
+        setAnalytics(null);
+      }
+
+      // Show success if at least some data loaded
+      success("Admin data loaded successfully");
+    } catch (err) {
+      logger.error("Unexpected error fetching admin data", err);
+      error("Unexpected error: " + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +166,11 @@ const AdminTools = () => {
   // ============= TRAINS =============
   const handleAddTrain = async (e) => {
     e.preventDefault();
-    if (!trainForm.trainNumber || !trainForm.trainName || !trainForm.totalSeats) {
+    if (
+      !trainForm.trainNumber ||
+      !trainForm.trainName ||
+      !trainForm.totalSeats
+    ) {
       error("Please fill all train details");
       return;
     }
@@ -191,7 +227,7 @@ const AdminTools = () => {
         routeForm.trainId,
         routeForm.stationCode,
         routeForm.stopOrder,
-        routeForm.halt
+        routeForm.halt,
       );
       success(" Route stop added successfully!");
       setRouteForm({
@@ -232,7 +268,7 @@ const AdminTools = () => {
         seatForm.trainId,
         seatForm.travelDate,
         seatForm.classType,
-        seatForm.seats
+        seatForm.seats,
       );
       success("Seats initialized successfully!");
       setSeatForm({
@@ -269,14 +305,14 @@ const AdminTools = () => {
   }
 
   return (
-    <div 
+    <div
       className="admin-page"
       style={{
         backgroundImage: `url(${authBgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        minHeight: '100vh'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        minHeight: "100vh",
       }}
     >
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -295,6 +331,65 @@ const AdminTools = () => {
 
         {/* ADMIN SECTIONS */}
         <div className="admin-sections-container">
+          {/* ============= ANALYTICS DASHBOARD SECTION ============= */}
+          <div className="admin-section">
+            <button
+              className={`section-header ${activeSection === "analytics" ? "active" : ""}`}
+              onClick={() => toggleSection("analytics")}
+            >
+              <div className="section-title">
+                <Settings size={22} className="text-orange-500" />
+                <span>Analytics Dashboard (Real-time)</span>
+              </div>
+              {activeSection === "analytics" ? (
+                <ChevronUp size={20} />
+              ) : (
+                <ChevronDown size={20} />
+              )}
+            </button>
+
+            {activeSection === "analytics" && (
+              <div className="section-content">
+                {analytics ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-green-500">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase">Today's Revenue</h4>
+                      <p className="text-2xl font-bold text-slate-800 mt-1">₹{analytics.todayRevenue || 0.0}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-blue-500">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase">Monthly Revenue</h4>
+                      <p className="text-2xl font-bold text-slate-800 mt-1">₹{analytics.monthlyRevenue || 0.0}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-orange-500">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase">Total Bookings</h4>
+                      <p className="text-2xl font-bold text-slate-800 mt-1">{analytics.totalBookings || 0}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-indigo-500">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase">Occupancy Rate</h4>
+                      <p className="text-2xl font-bold text-slate-800 mt-1">{(analytics.averageOccupancyRate || 0).toFixed(1)}%</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-message">No analytics data loaded. Make sure the database contains transactions.</div>
+                )}
+
+                {analytics && analytics.popularRoutes && Object.keys(analytics.popularRoutes).length > 0 && (
+                  <div className="bg-white p-4 rounded-xl shadow-md mt-4 max-w-md">
+                    <h3 className="font-bold text-slate-800 mb-3 border-b pb-2">Popular Routes</h3>
+                    <div className="space-y-2">
+                      {Object.entries(analytics.popularRoutes).map(([route, count]) => (
+                        <div key={route} className="flex justify-between items-center text-sm border-b pb-1">
+                          <span className="font-semibold text-slate-700">{route}</span>
+                          <span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-600">{count} Bookings</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* ============= TRAINS SECTION ============= */}
           <div className="admin-section">
             <button
@@ -325,7 +420,10 @@ const AdminTools = () => {
                         placeholder="Train Number (e.g., 12345)"
                         value={trainForm.trainNumber}
                         onChange={(e) =>
-                          setTrainForm({ ...trainForm, trainNumber: e.target.value })
+                          setTrainForm({
+                            ...trainForm,
+                            trainNumber: e.target.value,
+                          })
                         }
                       />
                       <input
@@ -333,7 +431,10 @@ const AdminTools = () => {
                         placeholder="Train Name (e.g., Rajdhani Express)"
                         value={trainForm.trainName}
                         onChange={(e) =>
-                          setTrainForm({ ...trainForm, trainName: e.target.value })
+                          setTrainForm({
+                            ...trainForm,
+                            trainName: e.target.value,
+                          })
                         }
                       />
                       <input
@@ -341,7 +442,10 @@ const AdminTools = () => {
                         placeholder="Total Seats"
                         value={trainForm.totalSeats}
                         onChange={(e) =>
-                          setTrainForm({ ...trainForm, totalSeats: parseInt(e.target.value) })
+                          setTrainForm({
+                            ...trainForm,
+                            totalSeats: parseInt(e.target.value),
+                          })
                         }
                       />
                       <button type="submit" className="btn btn-primary">
@@ -413,7 +517,10 @@ const AdminTools = () => {
                         placeholder="Station Code (e.g., DEL)"
                         value={stationForm.code}
                         onChange={(e) =>
-                          setStationForm({ ...stationForm, code: e.target.value })
+                          setStationForm({
+                            ...stationForm,
+                            code: e.target.value,
+                          })
                         }
                       />
                       <input
@@ -421,7 +528,10 @@ const AdminTools = () => {
                         placeholder="Station Name (e.g., Delhi Central)"
                         value={stationForm.name}
                         onChange={(e) =>
-                          setStationForm({ ...stationForm, name: e.target.value })
+                          setStationForm({
+                            ...stationForm,
+                            name: e.target.value,
+                          })
                         }
                       />
                       <button type="submit" className="btn btn-primary">
@@ -488,7 +598,10 @@ const AdminTools = () => {
                       <select
                         value={routeForm.trainId}
                         onChange={(e) =>
-                          setRouteForm({ ...routeForm, trainId: e.target.value })
+                          setRouteForm({
+                            ...routeForm,
+                            trainId: e.target.value,
+                          })
                         }
                       >
                         <option value="">Select Train</option>
@@ -502,7 +615,10 @@ const AdminTools = () => {
                       <select
                         value={routeForm.stationCode}
                         onChange={(e) =>
-                          setRouteForm({ ...routeForm, stationCode: e.target.value })
+                          setRouteForm({
+                            ...routeForm,
+                            stationCode: e.target.value,
+                          })
                         }
                       >
                         <option value="">Select Station</option>
@@ -531,7 +647,10 @@ const AdminTools = () => {
                           type="checkbox"
                           checked={routeForm.halt}
                           onChange={(e) =>
-                            setRouteForm({ ...routeForm, halt: e.target.checked })
+                            setRouteForm({
+                              ...routeForm,
+                              halt: e.target.checked,
+                            })
                           }
                         />
                         Halt
@@ -611,14 +730,20 @@ const AdminTools = () => {
                         type="date"
                         value={seatForm.travelDate}
                         onChange={(e) =>
-                          setSeatForm({ ...seatForm, travelDate: e.target.value })
+                          setSeatForm({
+                            ...seatForm,
+                            travelDate: e.target.value,
+                          })
                         }
                       />
 
                       <select
                         value={seatForm.classType}
                         onChange={(e) =>
-                          setSeatForm({ ...seatForm, classType: e.target.value })
+                          setSeatForm({
+                            ...seatForm,
+                            classType: e.target.value,
+                          })
                         }
                       >
                         <option value="SL">Sleeper (SL)</option>
@@ -633,7 +758,10 @@ const AdminTools = () => {
                         placeholder="Number of Seats"
                         value={seatForm.seats}
                         onChange={(e) =>
-                          setSeatForm({ ...seatForm, seats: parseInt(e.target.value) })
+                          setSeatForm({
+                            ...seatForm,
+                            seats: parseInt(e.target.value),
+                          })
                         }
                         min="1"
                       />
@@ -647,8 +775,8 @@ const AdminTools = () => {
 
                 <div className="info-box">
                   <p>
-                    💡 Use this to set available seats for a train on a specific date
-                    and class type.
+                    💡 Use this to set available seats for a train on a specific
+                    date and class type.
                   </p>
                 </div>
               </div>
@@ -701,7 +829,9 @@ const AdminTools = () => {
                             <td>{booking.classType}</td>
                             <td>{booking.seatCount}</td>
                             <td>
-                              <span className={`status ${booking.status.toLowerCase()}`}>
+                              <span
+                                className={`status ${booking.status.toLowerCase()}`}
+                              >
                                 {booking.status}
                               </span>
                             </td>
@@ -757,7 +887,9 @@ const AdminTools = () => {
                             <td>{payment.bookingId}</td>
                             <td>₹{payment.amount}</td>
                             <td>
-                              <span className={`status ${payment.status.toLowerCase()}`}>
+                              <span
+                                className={`status ${payment.status.toLowerCase()}`}
+                              >
                                 {payment.status}
                               </span>
                             </td>

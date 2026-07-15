@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import logger from "../utils/logger";
 
 const LoginSuccess = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const LoginSuccess = () => {
         await loginWithToken(token);
         navigate("/dashboard", { replace: true });
       } catch (error) {
-        console.error("OAuth login failed", error);
+        logger.error("OAuth login failed", error);
         navigate("/login", { replace: true });
       }
     };

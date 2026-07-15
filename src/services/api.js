@@ -1,7 +1,6 @@
 import axios from "axios";
 import { API_BASE_URL } from "../config/api";
-
-
+import logger from "../utils/logger";
 
 // ==============================
 // Axios instance
@@ -19,7 +18,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const method = config.method?.toUpperCase() || "REQUEST";
-    console.log("📤 API Request:", method, config.url);
+    logger.debug("API Request", { method, url: config.url });
 
     const token = localStorage.getItem("token");
     if (token) {
@@ -29,9 +28,9 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error("❌ Request Error:", error.message);
+    logger.error("Request Error", error.message);
     return Promise.reject(error);
-  }
+  },
 );
 
 // ==============================
@@ -39,11 +38,14 @@ api.interceptors.request.use(
 // ==============================
 api.interceptors.response.use(
   (response) => {
-    console.log("📥 API Response:", response.status, response.config.url);
+    logger.debug("API Response", {
+      status: response.status,
+      url: response.config.url,
+    });
     return response;
   },
   (error) => {
-    console.error("❌ API Error:", {
+    logger.error("API Error", {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
@@ -51,13 +53,13 @@ api.interceptors.response.use(
 
     // ✅ FORCE LOGOUT ON JWT EXPIRY (401 Unauthorized)
     if (error.response?.status === 401) {
-      console.warn("🔒 JWT expired or invalid - forcing logout");
-      
+      logger.warn("JWT expired or invalid - forcing logout");
+
       // Clear all auth data
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       sessionStorage.clear();
-      
+
       // Redirect to login (only if not already there)
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
@@ -65,7 +67,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
@@ -74,8 +76,7 @@ export default api;
 // Auth APIs
 // ==============================
 export const authAPI = {
-  login: (email, password) =>
-    api.post("/api/auth/login", { email, password }),
+  login: (email, password) => api.post("/api/auth/login", { email, password }),
 
   register: (name, email, password) =>
     api.post("/api/auth/register", { name, email, password }),
@@ -106,11 +107,9 @@ export const trainAPI = {
 // Booking APIs
 // ==============================
 export const bookingAPI = {
-  createBooking: (bookingData) =>
-    api.post("/api/bookings", bookingData),
+  createBooking: (bookingData) => api.post("/api/bookings", bookingData),
 
-  getMyBookings: () =>
-    api.get("/api/bookings/my-bookings"),
+  getMyBookings: () => api.get("/api/bookings/my-bookings"),
 
   cancelBooking: (bookingId) =>
     api.delete(`/api/bookings/cancellations/${bookingId}`),
@@ -120,8 +119,7 @@ export const bookingAPI = {
 // Passenger APIs
 // ==============================
 export const passengerAPI = {
-  getPassengers: (bookingId) =>
-    api.get(`/api/passengers/${bookingId}`),
+  getPassengers: (bookingId) => api.get(`/api/passengers/${bookingId}`),
 
   addPassengers: (bookingId, passengers) =>
     api.post(`/api/passengers/${bookingId}`, passengers),
@@ -134,16 +132,14 @@ export const paymentAPI = {
   createPaymentOrder: (bookingId) =>
     api.post(`/api/payments/create-order/${bookingId}`),
 
-  verifyPayment: (paymentData) =>
-    api.post(`/api/payments/verify`, paymentData),
+  verifyPayment: (paymentData) => api.post(`/api/payments/verify`, paymentData),
 
   makePayment: (bookingId, success, paymentMethod) =>
     api.post(`/api/payments/${bookingId}`, null, {
       params: { success, paymentMethod },
     }),
 
-  getPaymentStatus: (bookingId) =>
-    api.get(`/api/payments/status/${bookingId}`),
+  getPaymentStatus: (bookingId) => api.get(`/api/payments/status/${bookingId}`),
 };
 
 // ==============================
@@ -151,34 +147,81 @@ export const paymentAPI = {
 // ==============================
 export const adminAPI = {
   getTrains: () => api.get("/api/admin/trains"),
-  addTrain: (trainData) =>
-    api.post("/api/admin/trains", trainData),
+  addTrain: (trainData) => api.post("/api/admin/trains", trainData),
 
   getStations: () => api.get("/api/admin/stations"),
-  addStation: (stationData) =>
-    api.post("/api/admin/stations", stationData),
+  addStation: (stationData) => api.post("/api/admin/stations", stationData),
 
-  getRoute: (trainId) =>
-    api.get(`/api/admin/routes/${trainId}`),
+  getRoute: (trainId) => api.get(`/api/admin/routes/${trainId}`),
 
   addStop: (trainId, stationCode, stopOrder, halt) =>
     api.post(`/api/admin/routes/${trainId}/stops`, null, {
       params: { stationCode, stopOrder, halt },
     }),
 
-  deleteStop: (stopId) =>
-    api.delete(`/api/admin/routes/stops/${stopId}`),
+  deleteStop: (stopId) => api.delete(`/api/admin/routes/stops/${stopId}`),
 
   initializeSeats: (trainId, travelDate, classType, seats) =>
     api.post("/api/admin/seats/init", null, {
       params: { trainId, travelDate, classType, seats },
     }),
 
-  getAllBookings: () =>
-    api.get("/api/admin/bookings"),
+  getAllBookings: () => api.get("/api/admin/bookings"),
 
-  getAllPayments: () =>
-    api.get("/api/admin/payments"),
+  getAllPayments: () => api.get("/api/admin/payments"),
+
+  // Coach Management
+  getCoaches: (trainId) => api.get("/api/admin/v1/coaches", { params: { trainId } }),
+  createCoach: (coachData) => api.post("/api/admin/v1/coaches", coachData),
+  deleteCoach: (coachId) => api.delete(`/api/admin/v1/coaches/${coachId}`),
+
+  // Charts
+  prepareChart: (trainId, travelDate) => api.post("/api/admin/v1/charts/prepare", null, { params: { trainId, travelDate } }),
+
+  // Analytics
+  getAnalyticsDashboard: () => api.get("/api/admin/v1/analytics/dashboard"),
+
+  // Actuator health
+  getActuatorHealth: () => api.get("/actuator/health"),
+};
+
+// ==============================
+// Public & User APIs
+// ==============================
+export const pnrAPI = {
+  getPnrStatus: (pnr) => api.get(`/api/public/v1/pnr/${pnr}`),
+};
+
+export const scheduleAPI = {
+  getTrainSchedule: (trainId) => api.get(`/api/public/v1/trains/${trainId}/schedule`),
+  updateStopDetails: (stopId, details) => api.put(`/api/admin/v1/schedules/stops/${stopId}`, null, { params: details }),
+};
+
+export const chartAPI = {
+  getChartStatus: (trainId, travelDate) => api.get("/api/public/v1/charts/status", { params: { trainId, travelDate } }),
+};
+
+export const timelineAPI = {
+  getTimeline: (bookingId) => api.get(`/api/v1/timeline/${bookingId}`),
+};
+
+export const savedPassengerAPI = {
+  getSavedPassengers: () => api.get("/api/v1/passengers/saved"),
+  savePassenger: (passengerData) => api.post("/api/v1/passengers/saved", passengerData),
+  updatePassenger: (id, passengerData) => api.put(`/api/v1/passengers/saved/${id}`, passengerData),
+  deletePassenger: (id) => api.delete(`/api/v1/passengers/saved/${id}`),
+};
+
+export const dashboardAPI = {
+  getSummary: () => api.get("/api/v1/dashboard/summary"),
+};
+
+export const trackingAPI = {
+  getLiveLocation: (trainId) => api.get(`/api/public/v1/tracking/${trainId}/live`),
+};
+
+export const fareAPI = {
+  getFareBreakdown: (bookingId) => api.get(`/api/v1/fare/breakdown/${bookingId}`),
 };
 
 // ==============================
@@ -194,7 +237,7 @@ export const healthAPI = {
 export const clearAuthStorage = () => {
   if (typeof window === "undefined") return;
 
-  console.log("🧹 Clearing auth storage");
+  logger.debug("Clearing auth storage");
 
   localStorage.removeItem("token");
   localStorage.removeItem("user");

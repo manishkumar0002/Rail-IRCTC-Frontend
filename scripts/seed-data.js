@@ -6,8 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const BACKEND_URL = "http://localhost:8080";
-const ADMIN_EMAIL = "admin@irctc.com";
-const ADMIN_PASSWORD = "Admin@123";
+const ADMIN_EMAIL = "kumamanish2083@gmail.com";
+const ADMIN_PASSWORD = "Workspace@123";
 
 async function run() {
   console.log("🚀 Starting database seeding script...");

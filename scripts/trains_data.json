@@ -1,0 +1,129 @@
+{
+  "stations": [
+    { "code": "NDLS", "name": "New Delhi" },
+    { "code": "CNB", "name": "Kanpur Central" },
+    { "code": "DDU", "name": "Pt. Deen Dayal Upadhyaya Junction" },
+    { "code": "PNBE", "name": "Patna Junction" },
+    { "code": "HWH", "name": "Howrah Junction" },
+    { "code": "BCT", "name": "Mumbai Central" },
+    { "code": "BRC", "name": "Vadodara Junction" },
+    { "code": "RTM", "name": "Ratlam Junction" },
+    { "code": "KOTA", "name": "Kota Junction" }
+  ],
+  "trains": [
+    {
+      "trainNumber": "12302",
+      "trainName": "Howrah Rajdhani Express",
+      "totalSeats": 900,
+      "stops": [
+        {
+          "stationCode": "NDLS",
+          "halt": true,
+          "arrivalTime": "16:50",
+          "departureTime": "16:50",
+          "platform": 11,
+          "distanceFromOrigin": 0.0,
+          "runningDays": "MON,TUE,WED,THU,SAT,SUN",
+          "expectedDelayMinutes": 0
+        },
+        {
+          "stationCode": "CNB",
+          "halt": true,
+          "arrivalTime": "21:35",
+          "departureTime": "21:40",
+          "platform": 6,
+          "distanceFromOrigin": 440.0,
+          "runningDays": "MON,TUE,WED,THU,SAT,SUN",
+          "expectedDelayMinutes": 5
+        },
+        {
+          "stationCode": "DDU",
+          "halt": true,
+          "arrivalTime": "00:45",
+          "departureTime": "00:55",
+          "platform": 2,
+          "distanceFromOrigin": 785.0,
+          "runningDays": "TUE,WED,THU,FRI,SUN,MON",
+          "expectedDelayMinutes": 10
+        },
+        {
+          "stationCode": "PNBE",
+          "halt": true,
+          "arrivalTime": "03:10",
+          "departureTime": "03:20",
+          "platform": 1,
+          "distanceFromOrigin": 996.0,
+          "runningDays": "TUE,WED,THU,FRI,SUN,MON",
+          "expectedDelayMinutes": 8
+        },
+        {
+          "stationCode": "HWH",
+          "halt": true,
+          "arrivalTime": "09:55",
+          "departureTime": "09:55",
+          "platform": 8,
+          "distanceFromOrigin": 1445.0,
+          "runningDays": "TUE,WED,THU,FRI,SUN,MON",
+          "expectedDelayMinutes": 15
+        }
+      ]
+    },
+    {
+      "trainNumber": "12951",
+      "trainName": "Mumbai Rajdhani Express",
+      "totalSeats": 800,
+      "stops": [
+        {
+          "stationCode": "BCT",
+          "halt": true,
+          "arrivalTime": "17:00",
+          "departureTime": "17:00",
+          "platform": 1,
+          "distanceFromOrigin": 0.0,
+          "runningDays": "DAILY",
+          "expectedDelayMinutes": 0
+        },
+        {
+          "stationCode": "BRC",
+          "halt": true,
+          "arrivalTime": "21:40",
+          "departureTime": "21:50",
+          "platform": 2,
+          "distanceFromOrigin": 392.0,
+          "runningDays": "DAILY",
+          "expectedDelayMinutes": 2
+        },
+        {
+          "stationCode": "RTM",
+          "halt": true,
+          "arrivalTime": "01:13",
+          "departureTime": "01:15",
+          "platform": 4,
+          "distanceFromOrigin": 653.0,
+          "runningDays": "DAILY",
+          "expectedDelayMinutes": 4
+        },
+        {
+          "stationCode": "KOTA",
+          "halt": true,
+          "arrivalTime": "04:35",
+          "departureTime": "04:40",
+          "platform": 1,
+          "distanceFromOrigin": 920.0,
+          "runningDays": "DAILY",
+          "expectedDelayMinutes": 5
+        },
+        {
+          "stationCode": "NDLS",
+          "halt": true,
+          "arrivalTime": "08:30",
+          "departureTime": "08:30",
+          "platform": 3,
+          "distanceFromOrigin": 1386.0,
+          "runningDays": "DAILY",
+          "expectedDelayMinutes": 10
+        }
+      ]
+    }
+  ]
+}
